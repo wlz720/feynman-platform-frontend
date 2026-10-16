@@ -1,42 +1,62 @@
-// src/pages/LoginPage.jsx
 import { useState } from 'react';
+import apiClient from '../api/axios';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // 引入全局认证Hook
 
 function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth(); // 从全局状态获取登录方法
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    console.log('尝试登录', { email, password });
-    // 下节课对接后端API
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const response = await apiClient.post('/users/login', formData);
+      // 调用全局登录方法，自动同步token和localStorage
+      login(response.data.token);
+      alert('登录成功！');
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.msg || '登录失败，请检查邮箱和密码');
+    }
   };
 
   return (
-    <div>
+    <div style={{ padding: '20px' }}>
       <h1>用户登录</h1>
       <form onSubmit={handleSubmit}>
-        <div>
+        <div style={{ margin: '10px 0' }}>
           <label>邮箱：</label>
           <input
+            name="email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="请输入邮箱"
+            value={formData.email}
+            onChange={handleChange}
+            required
           />
         </div>
-        <div style={{marginTop:'8px'}}>
+        <div style={{ margin: '10px 0' }}>
           <label>密码：</label>
           <input
+            name="password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="请输入密码"
+            value={formData.password}
+            onChange={handleChange}
+            required
           />
         </div>
-        <div style={{marginTop:'12px'}}>
-          <button type="submit">登录</button>
-        </div>
+        <button type="submit">登录</button>
       </form>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
 }
