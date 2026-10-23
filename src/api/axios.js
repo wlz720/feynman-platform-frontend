@@ -1,11 +1,24 @@
 import axios from 'axios';
 
-// 创建axios实例，统一配置后端接口基础地址
 const apiClient = axios.create({
-    baseURL: 'http://localhost:3000/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: 'http://localhost:3000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
+
+// 请求拦截器：每次发请求自动带上token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['x-auth-token'] = token;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export default apiClient;

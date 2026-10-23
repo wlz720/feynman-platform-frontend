@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import apiClient from '../api/axios';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // 引入全局认证Hook
+import { useAuth } from '../context/AuthContext';
 
 function LoginPage() {
   const [formData, setFormData] = useState({
@@ -10,7 +10,7 @@ function LoginPage() {
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth(); // 从全局状态获取登录方法
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,8 +21,7 @@ function LoginPage() {
     setError('');
     try {
       const response = await apiClient.post('/users/login', formData);
-      // 调用全局登录方法，自动同步token和localStorage
-      login(response.data.token);
+      login(response.data.token, response.data.user);
       alert('登录成功！');
       navigate('/');
     } catch (err) {
@@ -31,32 +30,78 @@ function LoginPage() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>用户登录</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ margin: '10px 0' }}>
-          <label>邮箱：</label>
-          <input
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div style={{ margin: '10px 0' }}>
-          <label>密码：</label>
-          <input
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit">登录</button>
-      </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '70vh'
+    }}>
+      <div style={{
+        width: '420px',
+        padding: '36px',
+        background: '#ffffff',
+        borderRadius: '16px',
+        boxShadow: '0 4px 16px rgba(139, 92, 246, 0.18)'
+      }}>
+        <h1 style={{ textAlign: 'center', color: '#5b21b6', marginBottom: '28px' }}>用户登录</h1>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#4b5563' }}>邮箱：</label>
+            <input
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '12px 14px',
+                border: '1px solid #ddd6fe',
+                borderRadius: '10px',
+                fontSize: '15px',
+                outlineColor: '#8b5cf6'
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#4b5563' }}>密码：</label>
+            <input
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '12px 14px',
+                border: '1px solid #ddd6fe',
+                borderRadius: '10px',
+                fontSize: '15px',
+                outlineColor: '#8b5cf6'
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            style={{
+              width: '100%',
+              padding: '13px',
+              background: '#8b5cf6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '16px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            登录
+          </button>
+        </form>
+        {error && <p style={{ color: '#dc2626', textAlign: 'center', marginTop: '20px' }}>{error}</p>}
+      </div>
     </div>
   );
 }
