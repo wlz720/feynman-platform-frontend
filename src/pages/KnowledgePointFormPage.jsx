@@ -1,78 +1,145 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/axios';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 
 function KnowledgePointFormPage() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEditing = Boolean(id);
+  const isEdit = !!id; // 有id就是编辑模式，没有就是新建
 
-  // 如果是编辑模式，回显原有数据
+  const [formData, setFormData] = useState({
+    title: '',
+    content: ''
+  });
+  const [originData, setOriginData] = useState({
+    title: '',
+    content: ''
+  });
+
+  // 如果是编辑，加载原来的数据
   useEffect(() => {
-    if (isEditing) {
-      const loadKp = async () => {
-        try {
-          const res = await apiClient.get(`/knowledge-points/${id}`);
-          setTitle(res.data.title);
-          setContent(res.data.content);
-        } catch (e) {
-          console.error('读取知识点失败', e);
-        }
+    if (isEdit) {
+      const fetchKP = async () => {
+        const res = await apiClient.get(`/knowledge-points/${id}`);
+        setFormData({
+          title: res.data.title,
+          content: res.data.content
+        });
+        setOriginData({
+          title: res.data.title,
+          content: res.data.content
+        });
       };
-      loadKp();
+      fetchKP();
     }
-  }, [id, isEditing]);
+  }, [id, isEdit]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const kpData = { title, content };
-    try {
-      if (isEditing) {
-        await apiClient.put(`/knowledge-points/${id}`, kpData);
+    if (isEdit) {
+      await apiClient.put(`/knowledge-points/${id}`, formData);
+    } else {
+      await apiClient.post('/knowledge-points', formData);
+    }
+    navigate('/');
+  };
+
+  // 取消逻辑：区分新建/编辑，对比原始数据
+  const handleCancel = () => {
+    const isChanged = formData.title !== originData.title || formData.content !== originData.content;
+    if (isChanged) {
+      if (isEdit) {
+        if (window.confirm('确定放弃修改，退出编辑吗？未保存的改动会丢失！')) {
+          navigate('/');
+        }
       } else {
-        await apiClient.post('/knowledge-points', kpData);
+        if (window.confirm('确定放弃本次新建，退出吗？填写的内容会丢失！')) {
+          navigate('/');
+        }
       }
+    } else {
+      // 没有改动，直接返回主页，不弹窗
       navigate('/');
-    } catch (error) {
-      console.error('保存知识点失败', error);
     }
   };
 
   return (
-    <div>
-      <h1 style={{color:'#5b21b6'}}>{isEditing ? '编辑知识点' : '新建知识点'}</h1>
+    <div style={{ maxWidth: 860, margin: '0 auto', padding: '20px 16px' }}>
+      <h1 style={{ color: '#5b21b6' }}>
+        {isEdit ? '编辑知识点' : '新建知识点'}
+      </h1>
       <form onSubmit={handleSubmit}>
-        <div style={{marginBottom:'16px'}}>
-          <label style={{display:'block',marginBottom:'6px'}}>标题:</label>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom:6, fontSize:15 }}>标题:</label>
           <input
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={{ width: '100%', padding: '12px', boxSizing:'border-box',borderRadius:'8px',border:'1px solid #ddd6fe' }}
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: 8,
+              border: '1px solid #ddd6fe',
+              fontSize:15
+            }}
+            required
           />
         </div>
-        <div style={{ marginBottom: '6rem' }}>
-          <label style={{display:'block',marginBottom:'6px'}}>内容:</label>
-          <ReactQuill theme="snow" value={content} onChange={setContent} style={{ height: '300px' }} />
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', marginBottom:6, fontSize:15 }}>内容（支持输入Markdown文本）:</label>
+          <textarea
+            name="content"
+            value={formData.content}
+            onChange={handleChange}
+            rows={8}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: 8,
+              border: '1px solid #ddd6fe',
+              fontSize:15
+            }}
+            required
+          />
         </div>
-        <button
-          type="submit"
-          style={{
-            background:'#8b5cf6',
-            color:'white',
-            border:'none',
-            padding:'10px 22px',
-            borderRadius:'8px',
-            cursor:'pointer',
-            fontSize:'16px'
-          }}
-        >
-          {isEditing ? '更新' : '创建'}
-        </button>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            type="button"
+            onClick={handleCancel}
+            style={{
+              padding:'10px 20px',
+              borderRadius:'8px',
+              border:'1px solid #8b5cf6',
+              background:'#fff',
+              color:'#8b5cf6',
+              cursor:'pointer',
+              fontSize:'15px'
+            }}
+          >
+            取消
+          </button>
+          <button
+            type="submit"
+            style={{
+              padding:'10px 20px',
+              borderRadius:'8px',
+              border:'none',
+              background:'#8b5cf6',
+              color:'#fff',
+              cursor:'pointer',
+              fontSize:'15px'
+            }}
+          >
+            {isEdit ? '更新' : '提交'}
+          </button>
+        </div>
       </form>
     </div>
   );

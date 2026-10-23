@@ -1,0 +1,125 @@
+/* 只作用于 DashboardPage 的局部样式 */
+
+.markdownBox {
+  background: #ffffff;
+  padding: 18px 22px;
+  border-radius: 12px;
+  margin: 14px 0;
+  border: 1px solid #e9d5ff;
+  line-height: 1.75;
+}
+
+/* Markdown 标题 */
+.markdownBox :global(h1),
+.markdownBox :global(h2),
+.markdownBox :global(h3) {
+  color: #4c1d95;
+  margin-top: 18px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.markdownBox :global(h1) {
+  font-size: 24px;
+  border-bottom: 2px solid #ddd6fe;
+  padding-bottom: 8px;
+}
+
+.markdownBox :global(h2) {
+  font-size: 20px;
+}
+
+.markdownBox :global(h3) {
+  font-size: 17px;
+}
+
+/* Markdown 段落 */
+.markdownBox :global(p) {
+  margin: 10px 0;
+  color: #374151;
+}
+
+/* Markdown 列表 */
+.markdownBox :global(ul),
+.markdownBox :global(ol) {
+  padding-left: 22px;
+  margin: 10px 0;
+  color: #374151;
+}
+
+.markdownBox :global(li) {
+  margin: 6px 0;
+}
+
+/* Markdown 表格 */
+.markdownBox :global(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 14px 0;
+  font-size: 14px;
+}
+
+.markdownBox :global(th),
+.markdownBox :global(td) {
+  border: 1px solid #d8b4fe;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdownBox :global(th) {
+  background-color: #f3e8ff;
+  color: #5b21b6;
+  font-weight: 600;
+}
+
+.markdownBox :global(tr:nth-child(even)) {
+  background-color: #faf5ff;
+}
+
+/* 按钮样式 */
+.btnEdit {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #8b5cf6;
+  background: #fff;
+  color: #8b5cf6;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btnEdit:hover {
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.btnDelete {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btnDelete:hover {
+  background: #dc2626;
+}
+
+/* 卡片轻微增强 */
+.kpCard {
+  border: 1px solid #ddd6fe;
+  margin: 16px 0;
+  padding: 22px;
+  border-radius: 16px;
+  background: #fbfaff;
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(139, 92, 246, 0.14);
+}
