@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
 import { Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import MarkdownContent from '../components/MarkdownContent';
 import styles from './DashboardPage.module.css';
 
 function DashboardPage() {
@@ -23,7 +22,6 @@ function DashboardPage() {
         setLoading(false);
       }
     };
-
     fetchKnowledgePoints();
   }, []);
 
@@ -44,7 +42,6 @@ function DashboardPage() {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '20px 16px' }}>
       <h1 style={{ color: '#5b21b6', marginBottom: 18 }}>我的知识点</h1>
-
       <Link to="/kp/new">
         <button
           style={{
@@ -62,7 +59,6 @@ function DashboardPage() {
           + 新建知识点
         </button>
       </Link>
-
       <div style={{ marginTop: 28 }}>
         {knowledgePoints.length === 0 ? (
           <p style={{ color: '#6b7280' }}>你还没有知识点，快去创建一个吧！</p>
@@ -73,22 +69,32 @@ function DashboardPage() {
                 <h2 style={{ margin: '0 0 6px 0', color: '#4c1d95', fontSize: 20 }}>
                   {kp.title}
                 </h2>
-
                 <p style={{ margin: '4px 0 12px 0', color: '#6b7280', fontSize: 14 }}>
                   状态: {kp.status}
                 </p>
-
                 <div className={styles.markdownBox}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {kp.content}
-                  </ReactMarkdown>
+                  <MarkdownContent>{kp.content}</MarkdownContent>
                 </div>
-
                 <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
                   <Link to={`/kp/edit/${kp._id}`}>
                     <button className={styles.btnEdit}>编辑</button>
                   </Link>
-
+                  {/* 费曼复述录音跳转按钮 */}
+                  <Link to={`/feynman/${kp._id}`}>
+                    <button
+                      style={{
+                        padding: '6px 12px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#10b981',
+                        color: 'white',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      🎤开始复述
+                    </button>
+                  </Link>
                   <button className={styles.btnDelete} onClick={() => handleDelete(kp._id)}>
                     删除
                   </button>

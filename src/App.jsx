@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute'; // 引入路由守卫
 // 新增导入：知识点表单页面
 import KnowledgePointFormPage from './pages/KnowledgePointFormPage';
+import FeynmanRecordPage from './pages/FeynmanRecordPage';
 
 function App() {
   return (
@@ -14,13 +15,14 @@ function App() {
         {/* 公开页面：不用登录就能访问 */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-
         {/* 受保护页面：必须登录才能访问 */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<DashboardPage />} />
           {/* 新增两条知识点路由 */}
           <Route path="/kp/new" element={<KnowledgePointFormPage />} />
           <Route path="/kp/edit/:id" element={<KnowledgePointFormPage />} />
+          {/* 费曼复述录音页面，需要登录 */}
+          <Route path="/feynman/:id" element={<FeynmanRecordPage />} />
         </Route>
       </Route>
     </Routes>
