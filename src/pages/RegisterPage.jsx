@@ -2,7 +2,6 @@ import { useState } from 'react';
 import apiClient from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
 function RegisterPage() {
   const [formData, setFormData] = useState({
     username: '',
@@ -13,11 +12,9 @@ function RegisterPage() {
   const [tip, setTip] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth(); // 拿到登录方法
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -32,16 +29,14 @@ function RegisterPage() {
         email: formData.email,
         password: formData.password
       });
-
       // 第三步：存入全局登录状态，直接跳主页
       login(loginRes.data.token, loginRes.data.user);
       navigate('/');
-
     } catch (err) {
+      // 读取后端返回的msg，比如"邮箱已被注册"
       setError(err.response?.data?.msg || '注册失败');
     }
   };
-
   return (
     <div style={{
       display: 'flex',
@@ -125,7 +120,8 @@ function RegisterPage() {
               borderRadius: '10px',
               fontSize: '16px',
               fontWeight: '500',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              outline: 'none' // 解决按钮点击闪烁光标
             }}
           >
             注册
@@ -137,5 +133,4 @@ function RegisterPage() {
     </div>
   );
 }
-
 export default RegisterPage;

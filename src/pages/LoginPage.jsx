@@ -2,7 +2,6 @@ import { useState } from 'react';
 import apiClient from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
 function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
@@ -11,11 +10,9 @@ function LoginPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -25,10 +22,10 @@ function LoginPage() {
       alert('登录成功！');
       navigate('/');
     } catch (err) {
+      // 优先读取后端返回msg，没有才兜底
       setError(err.response?.data?.msg || '登录失败，请检查邮箱和密码');
     }
   };
-
   return (
     <div style={{
       display: 'flex',
@@ -64,7 +61,7 @@ function LoginPage() {
               }}
             />
           </div>
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: '#4b5563' }}>密码：</label>
             <input
               name="password"
@@ -83,6 +80,19 @@ function LoginPage() {
               }}
             />
           </div>
+          {/* 新增忘记密码，放在密码框下方 */}
+          <div style={{textAlign:'right', marginBottom:'24px'}}>
+            <span
+              style={{
+                color:'#8b5cf6',
+                cursor:'pointer',
+                fontSize:'14px'
+              }}
+              onClick={()=>{
+                alert('重置密码功能将在后续课时开发！');
+              }}
+            >忘记密码？</span>
+          </div>
           <button
             type="submit"
             style={{
@@ -94,7 +104,8 @@ function LoginPage() {
               borderRadius: '10px',
               fontSize: '16px',
               fontWeight: '500',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              outline: 'none' // 解决按钮点击闪烁光标
             }}
           >
             登录
@@ -105,5 +116,4 @@ function LoginPage() {
     </div>
   );
 }
-
 export default LoginPage;

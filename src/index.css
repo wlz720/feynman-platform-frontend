@@ -1,0 +1,16 @@
+/* 全局：按钮聚焦取消默认外框 */
+button:focus {
+  outline: none;
+}
+
+/* 普通文字容器禁止点击出现闪烁输入光标、禁止选中文字 */
+div, h1, h2, h3, h4, h5, h6, p, span, a {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 输入框、文本域保留光标和文字选中，保证正常打字 */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
