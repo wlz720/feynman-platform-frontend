@@ -78,8 +78,8 @@ function FeynmanRecordPage() {
         formData.append('knowledgePointId', id);
 
         const resp = await apiClient.post('/audio/transcribe', formData);
+        // 只回填文本，评分必须由用户确认（可修改）后手动触发
         setTranscribedText(resp.data.result);
-        await getAiEvaluation(resp.data.result);
       } catch (err) {
         console.error('上传转录失败：', err);
         setTranscribeError(err.response?.data?.msg || err.message || '转录失败');
@@ -87,7 +87,7 @@ function FeynmanRecordPage() {
         setIsUploading(false);
       }
     },
-    [id, getAiEvaluation]
+    [id]
   );
 
   const { status, startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({
@@ -108,6 +108,7 @@ function FeynmanRecordPage() {
   };
 
   const textEdited = Boolean(aiFeedback) && transcribedText.trim() !== evaluatedText.trim();
+  const needsConfirm = Boolean(transcribedText.trim()) && !aiFeedback && !isEvaluating;
   const scoreColor =
     aiFeedback?.score >= 80 ? '#16a34a' : aiFeedback?.score >= REVIEW_THRESHOLD ? '#f59e0b' : '#dc2626';
 
@@ -210,8 +211,12 @@ function FeynmanRecordPage() {
         >
           {aiFeedback ? '用修改后的文本重新评分' : '提交给 AI 教练'}
         </button>
-        <span style={{ color: '#6b7280', fontSize: 13 }}>
-          {textEdited ? '文本已修改，建议重新评分' : '识别不准确时可直接修改上面的文本'}
+        <span style={{ color: needsConfirm ? '#b45309' : '#6b7280', fontSize: 13 }}>
+          {needsConfirm
+            ? '识别完成，请先核对并修改文本，确认无误后点击按钮提交评分'
+            : textEdited
+              ? '文本已修改，建议重新评分'
+              : '识别不准确时可直接修改上面的文本'}
         </span>
       </div>
 
