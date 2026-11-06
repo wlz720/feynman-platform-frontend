@@ -22,8 +22,15 @@ function LoginPage() {
       alert('登录成功！');
       navigate('/');
     } catch (err) {
-      // 优先读取后端返回msg，没有才兜底
-      setError(err.response?.data?.msg || '登录失败，请检查邮箱和密码');
+      // 优先读取后端返回msg；连不上后端和密码错误要分开提示，否则会误导
+      const backendMsg = err.response?.data?.msg;
+      if (backendMsg) {
+        setError(backendMsg);
+      } else if (err.response) {
+        setError(`登录失败（HTTP ${err.response.status}），请稍后重试`);
+      } else {
+        setError('无法连接后端服务，请确认后端已启动（http://localhost:3000）');
+      }
     }
   };
   return (

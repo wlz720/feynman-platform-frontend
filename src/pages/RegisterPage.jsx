@@ -34,7 +34,14 @@ function RegisterPage() {
       navigate('/');
     } catch (err) {
       // 读取后端返回的msg，比如"邮箱已被注册"
-      setError(err.response?.data?.msg || '注册失败');
+      const backendMsg = err.response?.data?.msg;
+      if (backendMsg) {
+        setError(backendMsg);
+      } else if (err.response) {
+        setError(`注册失败（HTTP ${err.response.status}），请稍后重试`);
+      } else {
+        setError('无法连接后端服务，请确认后端已启动（http://localhost:3000）');
+      }
     }
   };
   return (
