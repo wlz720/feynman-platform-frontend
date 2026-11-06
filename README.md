@@ -68,7 +68,7 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 
 1. **Markdown 正文**：`react-markdown` 默认不解析原始 HTML，组件里再显式设置 `skipHtml`，`<script>`、`<img onerror>` 这类内容不会进入 DOM；`javascript:` 链接也会被默认的 URL 过滤清空。代码块里的尖括号会被转义成文本，因此课程要求保留的代码示例不受影响。
 2. **Mermaid SVG**：mermaid 在 `securityLevel: 'strict'` 下自带一次过滤，但 SVG 最终要通过 `dangerouslySetInnerHTML` 插入，属于「零信任」边界，因此在插入前再用 `DOMPurify.sanitize()` 按 mermaid 相同的白名单（`foreignobject`、`dominant-baseline`）消毒一遍，保留图形与文字、剥离脚本和事件属性。
-3. **输入边界**：后端对 `title`（≤200 字）与 `content`（≤10 万字）做类型和长度校验，避免超长内容拖垮渲染。
+3. **输入边界与入库消毒**：后端对 `title`（≤200 字）与 `content`（≤10 万字）做类型和长度校验，并在写入前删除代码块之外的原始 HTML，恶意载荷不会进入数据库；围栏代码块与行内代码保持原样。
 
 课程第六课的测试样例（`<script>alert('Hacked!')</script>`、`<img onerror=...>`）已验证：页面正常渲染标题，不出现弹窗，DOM 中也不存在脚本与事件属性。
 
