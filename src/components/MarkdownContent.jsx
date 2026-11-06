@@ -4,8 +4,17 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
+import DOMPurify from 'dompurify';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github.css';
+
+// mermaid 在 strict 模式下已经自己过滤过一遍，这里按同样的白名单再消毒一次，
+// 因为 SVG 最终会通过 dangerouslySetInnerHTML 插入，属于「零信任」边界。
+const MERMAID_SANITIZE_OPTIONS = {
+  ADD_TAGS: ['foreignobject'],
+  ADD_ATTR: ['dominant-baseline'],
+  HTML_INTEGRATION_POINTS: { foreignobject: true }
+};
 
 let mermaidLoader = null;
 function loadMermaid() {
@@ -28,7 +37,7 @@ function MermaidDiagram({ chart }) {
     loadMermaid()
       .then((mermaid) => mermaid.render(`mermaid-${Math.random().toString(36).slice(2)}`, chart))
       .then(({ svg: markup }) => {
-        if (!cancelled) setSvg(markup);
+        if (!cancelled) setSvg(DOMPurify.sanitize(markup, MERMAID_SANITIZE_OPTIONS));
       })
       .catch((err) => {
         if (!cancelled) setError(err.message);
@@ -55,6 +64,7 @@ export default function MarkdownContent({ children }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkMath]}
       rehypePlugins={[rehypeKatex, rehypeHighlight]}
+      skipHtml
       components={{
         pre({ node, children: preChildren, ...rest }) {
           const code = Array.isArray(preChildren) ? preChildren[0] : preChildren;

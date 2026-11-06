@@ -60,9 +60,17 @@ Chrome 的 MediaRecorder 输出的是 `audio/webm;codecs=opus`，而百度短语
 
 `src/api/axios.js` **不设置**默认的 `Content-Type: application/json`。axios 1.x 在 `Content-Type` 为 JSON 且数据是 FormData 时，会把表单序列化成 JSON（`transformRequest`），导致文件丢失、后端收到空请求体。普通对象请求仍由 axios 自动加上 JSON 头，multipart 则由浏览器自动生成带 boundary 的头。
 
-### 流程图
+### 流程图与 XSS 防护
 
 mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `language-mermaid` 的代码块时加载；渲染失败会降级为一段中文错误提示，不影响页面其余部分。
+
+安全上有三层处理：
+
+1. **Markdown 正文**：`react-markdown` 默认不解析原始 HTML，组件里再显式设置 `skipHtml`，`<script>`、`<img onerror>` 这类内容不会进入 DOM；`javascript:` 链接也会被默认的 URL 过滤清空。代码块里的尖括号会被转义成文本，因此课程要求保留的代码示例不受影响。
+2. **Mermaid SVG**：mermaid 在 `securityLevel: 'strict'` 下自带一次过滤，但 SVG 最终要通过 `dangerouslySetInnerHTML` 插入，属于「零信任」边界，因此在插入前再用 `DOMPurify.sanitize()` 按 mermaid 相同的白名单（`foreignobject`、`dominant-baseline`）消毒一遍，保留图形与文字、剥离脚本和事件属性。
+3. **输入边界**：后端对 `title`（≤200 字）与 `content`（≤10 万字）做类型和长度校验，避免超长内容拖垮渲染。
+
+课程第六课的测试样例（`<script>alert('Hacked!')</script>`、`<img onerror=...>`）已验证：页面正常渲染标题，不出现弹窗，DOM 中也不存在脚本与事件属性。
 
 ### AI 教练反馈
 
