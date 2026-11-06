@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import MarkdownContent from '../components/MarkdownContent';
+import { STATUS_LABELS } from '../utils/kpStatus';
 import styles from './DashboardPage.module.css';
 
-const STATUS_LABELS = {
-  not_started: '未开始',
-  need_review: '需复习',
-  mastered: '已掌握',
-};
-
 function DashboardPage() {
+  const navigate = useNavigate();
   const [knowledgePoints, setKnowledgePoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -74,17 +70,24 @@ function DashboardPage() {
               <li
                 key={kp._id}
                 className={`${styles.kpCard} ${kp.reviewList ? styles.kpCardReview : ''}`}
+                onClick={(e) => {
+                  // 卡片内的链接/按钮有自己的动作，点它们时不要跳详情
+                  if (e.target.closest('a, button')) return;
+                  navigate(`/kp/${kp._id}`);
+                }}
+                style={{ cursor: 'pointer' }}
+                title="点击查看知识点详情与上次复述评价"
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <h2 style={{ margin: '0 0 6px 0', color: '#4c1d95', fontSize: 20 }}>{kp.title}</h2>
                   {kp.reviewList && <span className={styles.reviewBadge}>● 需复习</span>}
-                  {typeof kp.lastScore === 'number' && (
+                  {typeof kp.lastAttempt?.score === 'number' && (
                     <span
                       className={`${styles.scoreBadge} ${
-                        kp.lastScore < 60 ? styles.scoreBadgeLow : ''
+                        kp.lastAttempt.score < 60 ? styles.scoreBadgeLow : ''
                       }`}
                     >
-                      上次得分 {kp.lastScore}
+                      上次得分 {kp.lastAttempt.score}
                     </span>
                   )}
                 </div>

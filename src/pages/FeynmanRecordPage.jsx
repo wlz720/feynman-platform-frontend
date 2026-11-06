@@ -11,12 +11,14 @@ function FeynmanRecordPage() {
   const navigate = useNavigate();
   const [kpTitle, setKpTitle] = useState('');
   const [transcribedText, setTranscribedText] = useState('');
+  const [transcribeError, setTranscribeError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   const [aiFeedback, setAiFeedback] = useState(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [aiError, setAiError] = useState('');
-  const [statusNotice, setStatusNotice] = useState('');
+  const [savedInfo, setSavedInfo] = useState(null);
+  const [evaluatedText, setEvaluatedText] = useState('');
 
   // 获取知识点标题
   useEffect(() => {
@@ -31,36 +33,23 @@ function FeynmanRecordPage() {
     fetchKpTitle();
   }, [id]);
 
-  // 转录完成后调用：先取原始知识点，再交给大模型润色 + 评价
+  // 拿原始知识点内容 → 交给大模型润色 + 评价，评价结果由后端写回该知识点
   const getAiEvaluation = useCallback(
-    async (transcribed) => {
+    async (text) => {
       setIsEvaluating(true);
       setAiFeedback(null);
       setAiError('');
-      setStatusNotice('');
+      setSavedInfo(null);
       try {
         const kpResponse = await apiClient.get(`/knowledge-points/${id}`);
-        const originalContent = kpResponse.data.content;
-
         const feedbackResponse = await apiClient.post('/audio/evaluate', {
-          originalContent,
-          transcribedText: transcribed,
+          originalContent: kpResponse.data.content,
+          transcribedText: text,
+          knowledgePointId: id,
         });
         setAiFeedback(feedbackResponse.data);
-
-        // 评分结果回写知识点：低于阈值自动进入复习列表
-        try {
-          const saved = await apiClient.post(`/knowledge-points/${id}/evaluate-result`, {
-            score: feedbackResponse.data.score,
-          });
-          setStatusNotice(
-            saved.data.reviewList
-              ? `得分低于 ${REVIEW_THRESHOLD}，已自动加入复习列表`
-              : '已标记为已掌握'
-          );
-        } catch (err) {
-          console.error('回写评价结果失败：', err);
-        }
+        setSavedInfo(feedbackResponse.data.saved || null);
+        setEvaluatedText(text);
       } catch (err) {
         console.error('获取 AI 评价失败', err);
         setAiError(err.response?.data?.msg || err.message || '获取 AI 评价失败');
@@ -75,9 +64,11 @@ function FeynmanRecordPage() {
     async (audioBlob) => {
       setIsUploading(true);
       setTranscribedText('');
+      setTranscribeError('');
       setAiFeedback(null);
       setAiError('');
-      setStatusNotice('');
+      setSavedInfo(null);
+      setEvaluatedText('');
       try {
         // 浏览器录出来通常是 webm/opus，这里统一转成 16kHz 单声道 wav
         const { blob: wavBlob } = await blobToBaiduWav(audioBlob);
@@ -91,8 +82,7 @@ function FeynmanRecordPage() {
         await getAiEvaluation(resp.data.result);
       } catch (err) {
         console.error('上传转录失败：', err);
-        const reason = err.response?.data?.msg || err.message;
-        setTranscribedText(`转录失败：${reason}`);
+        setTranscribeError(err.response?.data?.msg || err.message || '转录失败');
       } finally {
         setIsUploading(false);
       }
@@ -109,12 +99,15 @@ function FeynmanRecordPage() {
 
   const handleStart = () => {
     setTranscribedText('');
+    setTranscribeError('');
     setAiFeedback(null);
     setAiError('');
-    setStatusNotice('');
+    setSavedInfo(null);
+    setEvaluatedText('');
     startRecording();
   };
 
+  const textEdited = Boolean(aiFeedback) && transcribedText.trim() !== evaluatedText.trim();
   const scoreColor =
     aiFeedback?.score >= 80 ? '#16a34a' : aiFeedback?.score >= REVIEW_THRESHOLD ? '#f59e0b' : '#dc2626';
 
@@ -123,7 +116,7 @@ function FeynmanRecordPage() {
       <h1 style={{ color: '#5b21b6' }}>费曼复述：{kpTitle}</h1>
       <p>录音状态：{status}</p>
 
-      <div style={{ margin: '20px 0', display: 'flex', gap: '12px' }}>
+      <div style={{ margin: '20px 0', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <button
           onClick={handleStart}
           disabled={status === 'recording'}
@@ -153,6 +146,12 @@ function FeynmanRecordPage() {
           停止录音
         </button>
         <button
+          onClick={() => navigate(`/kp/${id}`)}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #aaa', background: '#fff' }}
+        >
+          查看知识点详情
+        </button>
+        <button
           onClick={() => navigate('/')}
           style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #aaa', background: '#fff' }}
         >
@@ -172,8 +171,48 @@ function FeynmanRecordPage() {
 
       <h2>AI语音转录结果</h2>
       {isUploading && <p>🟡正在上传音频并调用百度语音识别，请稍候...</p>}
-      <div style={{ border: '1px solid #ccc', padding: '16px', minHeight: '120px', borderRadius: '8px' }}>
-        {transcribedText || '转录后的文字会显示在这里'}
+      {transcribeError && (
+        <p style={{ color: '#b91c1c', background: '#fef2f2', padding: '10px 14px', borderRadius: 8 }}>
+          转录失败：{transcribeError}
+        </p>
+      )}
+
+      <textarea
+        value={transcribedText}
+        onChange={(e) => setTranscribedText(e.target.value)}
+        disabled={isUploading || isEvaluating}
+        rows={6}
+        placeholder="转录后的文字会显示在这里；识别有误可以直接修改，再提交给 AI 教练"
+        style={{
+          width: '100%',
+          boxSizing: 'border-box',
+          padding: 14,
+          borderRadius: 8,
+          border: '1px solid #ccc',
+          fontSize: 15,
+          lineHeight: 1.7,
+          resize: 'vertical',
+        }}
+      />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '10px 0 0' }}>
+        <button
+          onClick={() => getAiEvaluation(transcribedText)}
+          disabled={!transcribedText.trim() || isUploading || isEvaluating}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            border: 'none',
+            background: '#8b5cf6',
+            color: '#fff',
+            cursor: !transcribedText.trim() || isUploading || isEvaluating ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {aiFeedback ? '用修改后的文本重新评分' : '提交给 AI 教练'}
+        </button>
+        <span style={{ color: '#6b7280', fontSize: 13 }}>
+          {textEdited ? '文本已修改，建议重新评分' : '识别不准确时可直接修改上面的文本'}
+        </span>
       </div>
 
       {(isEvaluating || aiFeedback || aiError) && (
@@ -198,38 +237,25 @@ function FeynmanRecordPage() {
           }}
         >
           <span>{aiError}</span>
-          {transcribedText && !transcribedText.startsWith('转录失败') && (
-            <button
-              onClick={() => getAiEvaluation(transcribedText)}
-              style={{
-                padding: '5px 12px',
-                borderRadius: 6,
-                border: '1px solid #dc2626',
-                background: '#fff',
-                color: '#dc2626',
-                cursor: 'pointer',
-              }}
-            >
-              重试
-            </button>
-          )}
         </div>
       )}
 
       {aiFeedback && (
         <div>
-          {statusNotice && (
+          {savedInfo && (
             <p
               style={{
                 display: 'inline-block',
                 padding: '6px 12px',
                 borderRadius: 999,
-                background: aiFeedback.score < REVIEW_THRESHOLD ? '#fee2e2' : '#dcfce7',
-                color: aiFeedback.score < REVIEW_THRESHOLD ? '#b91c1c' : '#15803d',
+                background: savedInfo.reviewList ? '#fee2e2' : '#dcfce7',
+                color: savedInfo.reviewList ? '#b91c1c' : '#15803d',
                 fontSize: 14,
               }}
             >
-              {statusNotice}
+              {savedInfo.reviewList
+                ? `得分低于 ${REVIEW_THRESHOLD}，已自动加入复习列表`
+                : '已标记为已掌握'}
             </p>
           )}
 
