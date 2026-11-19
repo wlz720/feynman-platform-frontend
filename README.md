@@ -13,6 +13,7 @@
 - **复习闭环**：得分低于 60 自动进入复习列表，仪表盘卡片变红并显示「需复习」与上次得分
 - **AI 测评**：按知识点选择难度（基础/中等/困难）与题型（单选/简答）现场出题；单选题前端判分，简答题交给 AI 阅卷；答错自动把知识点加入复习列表
 - **AI 助手（RAG）**：与自己的整个知识库对话——后端先向量检索最相关的知识点片段，再由大模型据此作答，回答下方展示可点击的引用来源；知识库没有的内容会直说，不编造
+- **知识图谱**：ECharts 力导向图展示知识点引用关系，支持拖拽节点、缩放漫游、悬停高亮关联、点击跳详情；节点按学习状态着色（绿=已掌握 / 橙=需复习 / 紫=未开始）
 
 ## 技术栈
 
@@ -24,6 +25,7 @@
 | Markdown | react-markdown 10 + remark-gfm + remark-math + rehype-katex + rehype-highlight |
 | 流程图 | mermaid 12（动态 import，按需加载） |
 | 录音 | react-media-recorder 1.7（基于浏览器 MediaRecorder） |
+| 图表 | echarts + echarts-for-react（按需注册 GraphChart，只打包力导向图所需模块） |
 | 音频转码 | Web Audio API（decodeAudioData + OfflineAudioContext） |
 
 ## 快速开始
@@ -50,6 +52,7 @@ src/pages/FeynmanRecordPage.jsx  录音、可编辑转录与 AI 教练反馈
 src/pages/QuizPage.jsx           AI 出题测评（难度/题型切换、语音输入、AI 评分阅卷、答错入复习）
 src/pages/QuizHistoryPage.jsx    测评记录（分数/错题筛选/历史回顾）
 src/pages/AgentPage.jsx          AI 助手（RAG 知识库问答聊天界面）
+src/pages/GraphPage.jsx          知识图谱（ECharts 力导向图）
 src/pages/LoginPage.jsx          登录
 src/pages/RegisterPage.jsx       注册
 src/utils/audio.js               录音转 16000Hz 单声道 PCM WAV
@@ -106,6 +109,14 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 `/agent` 由 `AgentPage` 渲染，导航栏「AI助手」进入。聊天界面维护 `messages / inputValue / isLoading` 三个状态：发送后先把用户消息上屏，再调 `POST /ai/rag-qa`，等待期间显示三点跳动的「思考中」气泡，新消息自动平滑滚动到底部。
 
 机器人回答用 `MarkdownContent` 渲染（复用公式/代码高亮/流程图能力，且同样经过 XSS 消毒）；回答下方把后端返回的 `sources` 渲染成「引用来源」chips，点击跳转到对应知识点详情页，悬停可看检索片段摘要。后端返回的中文错误（凭证缺失、限流、欠费等）直接以红色气泡展示，网络中断才用兜底文案。
+
+### 知识图谱（课时12）
+
+`/graph` 由 `GraphPage` 渲染。数据来自 `GET /api/graph/knowledge-map`：每个知识点是一个节点，A 的正文提到 B 的标题就生成一条 A→B 的引用边（带箭头）。前端用 ECharts `graph` 系列的 `force` 力导向布局：`roam` 支持缩放平移、`draggable` 支持拖拽节点、`emphasis.focus: 'adjacency'` 悬停高亮一度邻居。
+
+课后挑战题已实现：后端节点带 `status / reviewList`，前端据此着色（`mastered` 绿、`reviewList` 橙、其余紫），并配 legend 图例；Tooltip 展示标题、状态、创建时间与内容摘要（选做的 G6 Tooltip 等价实现）。点击节点跳转知识点详情页。
+
+体积控制：`echarts-for-react/lib/core` + `echarts/core` 按需注册 `GraphChart / Tooltip / Legend / CanvasRenderer`，不引入整包 echarts，主 bundle 少打约 600KB。
 
 ### 接口地址
 

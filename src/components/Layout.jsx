@@ -34,6 +34,11 @@ function Layout() {
                 fontSize: '16px',
                 textDecoration: 'none'
               }}>AI助手</Link>
+              <Link to="/graph" style={{
+                color: '#fff',
+                fontSize: '16px',
+                textDecoration: 'none'
+              }}>知识图谱</Link>
             </div>
           ) : (
             <>

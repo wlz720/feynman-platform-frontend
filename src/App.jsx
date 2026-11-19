@@ -10,6 +10,7 @@ import KnowledgePointDetailPage from './pages/KnowledgePointDetailPage';
 import FeynmanRecordPage from './pages/FeynmanRecordPage';
 import QuizPage from './pages/QuizPage';
 import AgentPage from './pages/AgentPage';
+import GraphPage from './pages/GraphPage';
 
 function App() {
   return (
@@ -32,6 +33,8 @@ function App() {
           <Route path="/quiz/:id" element={<QuizPage />} />
           {/* 课时11：AI 助手（RAG 私有知识库问答） */}
           <Route path="/agent" element={<AgentPage />} />
+          {/* 课时12：知识图谱（ECharts 力导向图） */}
+          <Route path="/graph" element={<GraphPage />} />
         </Route>
       </Route>
     </Routes>
