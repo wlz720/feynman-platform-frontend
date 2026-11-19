@@ -16,6 +16,7 @@
 - **知识图谱**：ECharts 力导向图展示知识点引用关系，支持拖拽节点、缩放漫游、悬停高亮关联、点击跳详情；节点按学习状态着色（绿=已掌握 / 橙=需复习 / 紫=未开始）
 - **3D 视界**：Three.js 把知识点映射成三维「星球」（颜色=学习状态），引用关系变成「星际航线」；鼠标悬停高亮星球与相连航线，点击星球进入知识点详情，另含一个旋转立方体演示场景/相机/渲染器三要素
 - **3D 知识宇宙**：在 3D 视界之上用 `d3-force-3d` 做三维力导向布局，星球自动排布成星系；点击星球弹出信息浮层（标题、状态、内容摘要），可跳转知识点详情；连线随节点实时更新并支持关联高亮
+- **跨平台**：`Electron` 把同一套 React 应用封装成 Windows/macOS 桌面程序；`PWA` 让网站在 Chrome 里可「安装到主屏」并离线打开应用外壳
 
 ## 技术栈
 
@@ -30,6 +31,8 @@
 | 图表 | echarts + echarts-for-react（按需注册 GraphChart，只打包力导向图所需模块） |
 | 3D | three（原生 WebGL 渲染、OrbitControls、Raycaster 鼠标拾取） |
 | 3D 力导向 | d3-force-3d（三维电荷斥力 + 链接弹簧 + 中心力） |
+| 桌面端 | Electron 45（主进程 + 渲染进程，原生菜单与 IPC 边界） |
+| 移动端 / 离线 | PWA（vite-plugin-pwa + Workbox：manifest + Service Worker） |
 | 音频转码 | Web Audio API（decodeAudioData + OfflineAudioContext） |
 
 ## 快速开始
@@ -38,6 +41,10 @@
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # 产物输出到 dist/
+npm run preview    # 本地预览生产构建
+
+npm run electron:dev    # 同时启动 Vite 与 Electron 桌面窗口（需先启动后端）
+npm run electron:build  # 构建相对路径版本并打包安装包到 release/（耗时较长）
 ```
 
 需要先启动后端（默认 `http://localhost:3000`），地址配置在 `src/api/axios.js` 的 `baseURL`。
@@ -46,6 +53,9 @@ npm run build      # 产物输出到 dist/
 
 ```
 src/App.jsx                      路由表（公开页 / 受保护页）
+electron.cjs                     Electron 主进程（窗口、菜单、权限、外链策略）
+public/pwa-192x192.png           PWA 图标（192）
+public/pwa-512x512.png           PWA 图标（512）
 src/api/axios.js                 axios 实例与 token 拦截器
 src/components/MarkdownContent.jsx  公式、流程图、代码高亮渲染
 src/components/KnowledgeList.jsx    知识点列表卡片
@@ -148,6 +158,25 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 4. **点击拾取**：`Raycaster` 把鼠标位置归一化到 NDC 后与球体求交；`pointerdown/up` 位移小于 5px 才算点击，避免和 OrbitControls 拖拽冲突。选中星球放大 1.18 倍并发光，相连航线变琥珀色、其余压暗；空点取消选中。
 5. **信息浮层**：选中后右下角面板展示标题、状态与 120 字摘要，「查看知识点详情」跳 `/kp/:id`；悬停有跟随鼠标的标题提示，右上角是状态图例与星球/航线数量。
 6. **资源管理**：切换或卸载时停止模拟与动画循环、移除指针监听，并 `dispose()` 几何体、材质与渲染器。
+
+### 跨平台：Electron 桌面端（课时15）
+
+`electron.cjs` 是主进程入口（`package.json` 的 `main`）。课程示例里的 `electron.js` 在本项目改名为 `.cjs`：前端 `package.json` 声明了 `"type": "module"`，同名 `.js` 会被当成 ESM，`require('electron')` 直接报错，而 `.cjs` 始终按 CommonJS 解析。
+
+1. **主进程 / 渲染进程**：主进程有完整 Node.js 环境，负责创建 1200×800 窗口、原生菜单、生命周期与麦克风权限；渲染进程就是 Chromium 里的 React 应用，`nodeIntegration: false`、`contextIsolation: true`、`sandbox: true`，页面拿不到 Node API，XSS 无法升级成任意代码执行。
+2. **加载地址**：开发时读 `ELECTRON_START_URL` 加载 `http://localhost:5173` 并打开开发者工具；生产时 `loadFile` 加载 `dist/index.html`。
+3. **路由**：`file://` 下 history 路由会找不到页面，`src/main.jsx` 检测协议自动切 `HashRouter`（`/#/agent`）；浏览器环境仍用 `BrowserRouter`。
+4. **资源路径**：`electron:build` 先用 `vite build --base ./` 生成相对路径产物，避免 `file://` 把 `/assets/...` 解析到磁盘根目录；Web/PWA 构建仍用绝对路径。
+5. **原生菜单（课后挑战）**：`Menu.buildFromTemplate` 提供「文件 → 退出」「视图 → 重新加载/开发者工具/缩放」「帮助 → 关于」，关于弹窗展示版本号。
+6. **安全边界**：`setWindowOpenHandler` 把站外链接交给系统浏览器；`will-navigate` 阻止窗口被导航到非本应用地址；权限处理只放行 `media`（录音需要麦克风），其余请求一律拒绝。
+7. **打包**：`npm run electron:build` 使用 `electron-builder`，产物在 `release/`（已 gitignore）。本次作业只完成集成与构建验证，没有实际产出安装包；首次打包会下载 Electron/NSIS 依赖，国内网络可在安装前设置 `ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`。
+
+### 跨平台：PWA（课时15）
+
+1. **Manifest**：`vite.config.js` 的 `VitePWA` 配置生成 `dist/manifest.webmanifest`——名称「费曼学习平台」、`display: standalone`、主题色 `#8b5cf6`、192/512 两种图标（512 同时声明 `maskable`），图标由 `public/pwa-*.png` 提供。
+2. **Service Worker**：`workbox` 预缓存应用外壳（`**/*.{js,css,html,svg,png,ico,woff2}`，129 个文件约 7.5MB）；主包超过 Workbox 默认 2MB 上限，因此把 `maximumFileSizeToCacheInBytes` 调到 5MB。`navigateFallback: '/index.html'` 保证离线时直接访问 `/agent` 也能回到 SPA；`navigateFallbackDenylist` 排除 `/api`，接口请求不会被当成页面。
+3. **注册时机**：`registerType: 'autoUpdate'` + `injectRegister: null`，在 `main.jsx` 里仅当生产构建、协议为 http(s) 且浏览器支持 Service Worker 时注册；Electron 的 `file://` 直接跳过，避免控制台报错。
+4. **离线测试**：`npm run build && npm run preview`，Chrome 打开预览地址 → F12 → Application → Manifest 可看到图标与名称，Service Workers 显示 `sw.js` 已激活；Network 勾选 Offline 后刷新，应用外壳仍能打开（后端接口此时不可用，属预期）。地址栏/菜单出现「安装」即可添加到桌面或主屏。
 
 ### 接口地址
 
