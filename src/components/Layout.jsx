@@ -39,6 +39,11 @@ function Layout() {
                 fontSize: '16px',
                 textDecoration: 'none'
               }}>知识图谱</Link>
+              <Link to="/3d-world" style={{
+                color: '#fff',
+                fontSize: '16px',
+                textDecoration: 'none'
+              }}>3D视界</Link>
             </div>
           ) : (
             <>

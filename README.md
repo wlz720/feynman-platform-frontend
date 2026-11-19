@@ -14,6 +14,7 @@
 - **AI 测评**：按知识点选择难度（基础/中等/困难）与题型（单选/简答）现场出题；单选题前端判分，简答题交给 AI 阅卷；答错自动把知识点加入复习列表
 - **AI 助手（RAG）**：与自己的整个知识库对话——后端先向量检索最相关的知识点片段，再由大模型据此作答，回答下方展示可点击的引用来源；知识库没有的内容会直说，不编造
 - **知识图谱**：ECharts 力导向图展示知识点引用关系，支持拖拽节点、缩放漫游、悬停高亮关联、点击跳详情；节点按学习状态着色（绿=已掌握 / 橙=需复习 / 紫=未开始）
+- **3D 视界**：Three.js 把知识点映射成三维「星球」（颜色=学习状态），引用关系变成「星际航线」；鼠标悬停高亮星球与相连航线，点击星球进入知识点详情，另含一个旋转立方体演示场景/相机/渲染器三要素
 
 ## 技术栈
 
@@ -26,6 +27,7 @@
 | 流程图 | mermaid 12（动态 import，按需加载） |
 | 录音 | react-media-recorder 1.7（基于浏览器 MediaRecorder） |
 | 图表 | echarts + echarts-for-react（按需注册 GraphChart，只打包力导向图所需模块） |
+| 3D | three（原生 WebGL 渲染、OrbitControls、Raycaster 鼠标拾取） |
 | 音频转码 | Web Audio API（decodeAudioData + OfflineAudioContext） |
 
 ## 快速开始
@@ -53,6 +55,7 @@ src/pages/QuizPage.jsx           AI 出题测评（难度/题型切换、语音�
 src/pages/QuizHistoryPage.jsx    测评记录（分数/错题筛选/历史回顾）
 src/pages/AgentPage.jsx          AI 助手（RAG 知识库问答聊天界面）
 src/pages/GraphPage.jsx          知识图谱（ECharts 力导向图）
+src/pages/ThreeJSPage.jsx        3D 视界（Three.js 知识星球 + 旋转立方体演示）
 src/pages/LoginPage.jsx          登录
 src/pages/RegisterPage.jsx       注册
 src/utils/audio.js               录音转 16000Hz 单声道 PCM WAV
@@ -117,6 +120,20 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 课后挑战题已实现：后端节点带 `status / reviewList`，前端据此着色（`mastered` 绿、`reviewList` 橙、其余紫），并配 legend 图例；Tooltip 展示标题、状态、创建时间与内容摘要（选做的 G6 Tooltip 等价实现）。点击节点跳转知识点详情页。
 
 体积控制：`echarts-for-react/lib/core` + `echarts/core` 按需注册 `GraphChart / Tooltip / Legend / CanvasRenderer`，不引入整包 echarts，主 bundle 少打约 600KB。
+
+### 3D 视界（课时13）
+
+`/3d-world` 由 `ThreeJSPage` 渲染，导航栏「3D视界」进入，页内可切换两种模式：
+
+- **知识宇宙**：复用 `GET /api/graph/knowledge-map` 的节点与引用边，每个知识点是一颗球体，颜色沿用学习状态（绿/橙/紫），球体半径随 `symbolSize` 缩放；引用边用 `THREE.Line` 连接两端节点。悬停时通过 `Raycaster` 拾取星球，材质 `emissive` 发光并高亮相连航线、其余航线降透明度，左上角浮层显示标题与正文摘要；点击（按下与抬起位移 < 5px，避免和拖拽旋转冲突）跳转知识点详情。
+- **旋转立方体**：课件第二部分的 Hello 3D World，绿色立方体自转，用于演示场景 `Scene`、透视相机 `PerspectiveCamera`、渲染器 `WebGLRenderer` 三要素与 `OrbitControls`。
+
+实现细节：
+
+1. **响应式**：窗口尺寸变化时由 `window.resize` 监听同步更新 `camera.aspect`、投影矩阵与渲染器尺寸；容器高度为 `72vh`。
+2. **资源释放**：几何体、材质、`OrbitControls`、`WebGLRenderer` 与事件监听在 `useEffect` 清理函数里逐个 `dispose()`，切换模式或卸载页面不会残留 WebGL 上下文。
+3. **避免重复建场景**：`navigate` 通过 ref 透传，不放进 3D `useEffect` 依赖，否则路由变化会重建整个宇宙。
+4. **数据未就绪**：图谱数据没回来前不初始化场景，空知识库时给出中文引导而不是黑屏。
 
 ### 接口地址
 

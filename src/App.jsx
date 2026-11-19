@@ -11,6 +11,7 @@ import FeynmanRecordPage from './pages/FeynmanRecordPage';
 import QuizPage from './pages/QuizPage';
 import AgentPage from './pages/AgentPage';
 import GraphPage from './pages/GraphPage';
+import ThreeJSPage from './pages/ThreeJSPage';
 
 function App() {
   return (
@@ -35,6 +36,8 @@ function App() {
           <Route path="/agent" element={<AgentPage />} />
           {/* 课时12：知识图谱（ECharts 力导向图） */}
           <Route path="/graph" element={<GraphPage />} />
+          {/* 课时13：3D 视界（Three.js 知识宇宙） */}
+          <Route path="/3d-world" element={<ThreeJSPage />} />
         </Route>
       </Route>
     </Routes>
