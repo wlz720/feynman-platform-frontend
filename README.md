@@ -33,6 +33,7 @@
 | 3D 力导向 | d3-force-3d（三维电荷斥力 + 链接弹簧 + 中心力） |
 | 桌面端 | Electron 45（主进程 + 渲染进程，原生菜单与 IPC 边界） |
 | 移动端 / 离线 | PWA（vite-plugin-pwa + Workbox：manifest + Service Worker） |
+| 部署 | Docker 多阶段构建 + Nginx（SPA 回退、/api 反向代理） |
 | 音频转码 | Web Audio API（decodeAudioData + OfflineAudioContext） |
 
 ## 快速开始
@@ -56,6 +57,10 @@ src/App.jsx                      路由表（公开页 / 受保护页）
 electron.cjs                     Electron 主进程（窗口、菜单、权限、外链策略）
 public/pwa-192x192.png           PWA 图标（192）
 public/pwa-512x512.png           PWA 图标（512）
+Dockerfile                       课时16 前端镜像（Node 构建 → Nginx）
+nginx.conf                       SPA 回退、/api 反向代理、缓存与压缩
+docker-compose.yml               前端 + 后端两个容器一键启动
+docs/项目总结与汇报.md            课时16 架构、难点、部署与演示脚本
 src/api/axios.js                 axios 实例与 token 拦截器
 src/components/MarkdownContent.jsx  公式、流程图、代码高亮渲染
 src/components/KnowledgeList.jsx    知识点列表卡片
@@ -177,6 +182,24 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 2. **Service Worker**：`workbox` 预缓存应用外壳（`**/*.{js,css,html,svg,png,ico,woff2}`，129 个文件约 7.5MB）；主包超过 Workbox 默认 2MB 上限，因此把 `maximumFileSizeToCacheInBytes` 调到 5MB。`navigateFallback: '/index.html'` 保证离线时直接访问 `/agent` 也能回到 SPA；`navigateFallbackDenylist` 排除 `/api`，接口请求不会被当成页面。
 3. **注册时机**：`registerType: 'autoUpdate'` + `injectRegister: null`，在 `main.jsx` 里仅当生产构建、协议为 http(s) 且浏览器支持 Service Worker 时注册；Electron 的 `file://` 直接跳过，避免控制台报错。
 4. **离线测试**：`npm run build && npm run preview`，Chrome 打开预览地址 → F12 → Application → Manifest 可看到图标与名称，Service Workers 显示 `sw.js` 已激活；Network 勾选 Offline 后刷新，应用外壳仍能打开（后端接口此时不可用，属预期）。地址栏/菜单出现「安装」即可添加到桌面或主屏。
+
+### 容器化部署（课时16）
+
+1. **前端镜像**：`Dockerfile` 两阶段——`node:20-alpine` 里 `npm ci && npm run build`（设置 `ELECTRON_SKIP_BINARY_DOWNLOAD=1`，容器不需要 Electron 二进制），再把 `dist` 复制进 `nginx:stable-alpine`，最终镜像不含源码与 node_modules。
+2. **Nginx**：`nginx.conf` 负责三件事——`try_files $uri $uri/ /index.html` 支持 React Router 的 history 路由；`location /api/` 反向代理到 `backend:3000`；`sw.js` 与 `manifest.webmanifest` 禁止长缓存，带哈希的静态资源缓存 7 天。音频上传的 `client_max_body_size` 放到 4MB，大模型请求读超时 120s。
+3. **前后端编排**：`docker-compose.yml` 同时构建 `../feynman-platform-backend` 与当前目录，后端通过 `env_file` 读取 `.env`，`vector_store` 挂到命名卷持久化 RAG 索引，前端暴露 8080。
+4. **同源策略**：容器构建时传入 `VITE_API_BASE_URL=/api`，浏览器只访问 Nginx，跨域与 CORS 都不需要额外处理。
+
+```bash
+# 先在后端目录准备 .env
+cd ../feynman-platform-backend && copy .env.example .env
+
+# 回到前端目录启动
+docker compose up -d --build
+# 前端 http://localhost:8080，后端健康检查 http://localhost:3000/
+```
+
+本机没有安装 Docker，因此本次只交付并校验了 Dockerfile / compose / nginx 配置，未实际构建镜像。完整架构、部署步骤、演示脚本与汇报提纲见 [`docs/项目总结与汇报.md`](docs/项目总结与汇报.md)。
 
 ### 接口地址
 

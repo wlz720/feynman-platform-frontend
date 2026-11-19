@@ -1,0 +1,38 @@
+# 课时16：一键启动「前端 Nginx + 后端 Node」两个容器
+# 使用前提：后端目录下已根据 .env.example 创建 .env（含 MONGO_URI / JWT_SECRET / 百度与 LLM 凭证）
+#   cd ../feynman-platform-backend
+#   copy .env.example .env
+# 启动：docker compose up -d --build
+# 访问：http://localhost:8080
+
+name: feynman-platform
+
+services:
+  backend:
+    build:
+      context: ../feynman-platform-backend
+    env_file:
+      - ../feynman-platform-backend/.env
+    environment:
+      PORT: 3000
+    # 仅本地调试时把 API 端口映射出来；云上可删除，只让 frontend 内网访问
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      # 向量库落在命名卷里，重建容器不丢 RAG 索引
+      - vector_store:/app/vector_store
+
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: /api
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  vector_store:
