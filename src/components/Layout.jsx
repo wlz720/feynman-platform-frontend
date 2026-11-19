@@ -44,6 +44,11 @@ function Layout() {
                 fontSize: '16px',
                 textDecoration: 'none'
               }}>3D视界</Link>
+              <Link to="/universe" style={{
+                color: '#fff',
+                fontSize: '16px',
+                textDecoration: 'none'
+              }}>知识宇宙</Link>
             </div>
           ) : (
             <>

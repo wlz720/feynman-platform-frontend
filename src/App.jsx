@@ -12,6 +12,7 @@ import QuizPage from './pages/QuizPage';
 import AgentPage from './pages/AgentPage';
 import GraphPage from './pages/GraphPage';
 import ThreeJSPage from './pages/ThreeJSPage';
+import KnowledgeUniversePage from './pages/KnowledgeUniversePage';
 
 function App() {
   return (
@@ -38,6 +39,8 @@ function App() {
           <Route path="/graph" element={<GraphPage />} />
           {/* 课时13：3D 视界（Three.js 知识宇宙） */}
           <Route path="/3d-world" element={<ThreeJSPage />} />
+          {/* 课时14：3D 知识宇宙（d3-force-3d 力导向布局 + 点击信息浮层） */}
+          <Route path="/universe" element={<KnowledgeUniversePage />} />
         </Route>
       </Route>
     </Routes>

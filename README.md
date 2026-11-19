@@ -15,6 +15,7 @@
 - **AI 助手（RAG）**：与自己的整个知识库对话——后端先向量检索最相关的知识点片段，再由大模型据此作答，回答下方展示可点击的引用来源；知识库没有的内容会直说，不编造
 - **知识图谱**：ECharts 力导向图展示知识点引用关系，支持拖拽节点、缩放漫游、悬停高亮关联、点击跳详情；节点按学习状态着色（绿=已掌握 / 橙=需复习 / 紫=未开始）
 - **3D 视界**：Three.js 把知识点映射成三维「星球」（颜色=学习状态），引用关系变成「星际航线」；鼠标悬停高亮星球与相连航线，点击星球进入知识点详情，另含一个旋转立方体演示场景/相机/渲染器三要素
+- **3D 知识宇宙**：在 3D 视界之上用 `d3-force-3d` 做三维力导向布局，星球自动排布成星系；点击星球弹出信息浮层（标题、状态、内容摘要），可跳转知识点详情；连线随节点实时更新并支持关联高亮
 
 ## 技术栈
 
@@ -28,6 +29,7 @@
 | 录音 | react-media-recorder 1.7（基于浏览器 MediaRecorder） |
 | 图表 | echarts + echarts-for-react（按需注册 GraphChart，只打包力导向图所需模块） |
 | 3D | three（原生 WebGL 渲染、OrbitControls、Raycaster 鼠标拾取） |
+| 3D 力导向 | d3-force-3d（三维电荷斥力 + 链接弹簧 + 中心力） |
 | 音频转码 | Web Audio API（decodeAudioData + OfflineAudioContext） |
 
 ## 快速开始
@@ -56,6 +58,7 @@ src/pages/QuizHistoryPage.jsx    测评记录（分数/错题筛选/历史回顾
 src/pages/AgentPage.jsx          AI 助手（RAG 知识库问答聊天界面）
 src/pages/GraphPage.jsx          知识图谱（ECharts 力导向图）
 src/pages/ThreeJSPage.jsx        3D 视界（Three.js 知识星球 + 旋转立方体演示）
+src/pages/KnowledgeUniversePage.jsx 3D 知识宇宙（d3-force-3d 力导向布局 + 点击信息浮层）
 src/pages/LoginPage.jsx          登录
 src/pages/RegisterPage.jsx       注册
 src/utils/audio.js               录音转 16000Hz 单声道 PCM WAV
@@ -134,6 +137,17 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 2. **资源释放**：几何体、材质、`OrbitControls`、`WebGLRenderer` 与事件监听在 `useEffect` 清理函数里逐个 `dispose()`，切换模式或卸载页面不会残留 WebGL 上下文。
 3. **避免重复建场景**：`navigate` 通过 ref 透传，不放进 3D `useEffect` 依赖，否则路由变化会重建整个宇宙。
 4. **数据未就绪**：图谱数据没回来前不初始化场景，空知识库时给出中文引导而不是黑屏。
+
+### 3D 知识宇宙（课时14）
+
+`/universe` 由 `KnowledgeUniversePage` 渲染，导航栏「知识宇宙」进入。它和 `/3d-world` 共用同一份图谱数据，但节点位置不再随机：
+
+1. **数据驱动**：`Promise.all` 同时请求 `GET /knowledge-points`（拿正文全文）与 `GET /graph/knowledge-map`（拿节点状态与引用边），按 id 合并。
+2. **力导向布局**：`forceSimulation(nodes, 3)` + `forceManyBody().strength(-70)`（星球互相排斥）+ `forceCenter(0, 0, 0)`（向星系中心聚拢）+ `forceLink().distance(38)`（引用关系像引力绳）。模拟由页面自己的 `requestAnimationFrame` 调用 `tick()` 推进，收敛（`alpha <= alphaMin`）后停止计算，避免空转烧 CPU。
+3. **节点与边**：所有星球共用一份 `SphereGeometry`，只按 `symbolSize` 缩放；所有航线合并成一个 `LineSegments`（`Float32Array` 顶点缓冲），每帧只更新 position 属性，避免为每条边建独立对象。
+4. **点击拾取**：`Raycaster` 把鼠标位置归一化到 NDC 后与球体求交；`pointerdown/up` 位移小于 5px 才算点击，避免和 OrbitControls 拖拽冲突。选中星球放大 1.18 倍并发光，相连航线变琥珀色、其余压暗；空点取消选中。
+5. **信息浮层**：选中后右下角面板展示标题、状态与 120 字摘要，「查看知识点详情」跳 `/kp/:id`；悬停有跟随鼠标的标题提示，右上角是状态图例与星球/航线数量。
+6. **资源管理**：切换或卸载时停止模拟与动画循环、移除指针监听，并 `dispose()` 几何体、材质与渲染器。
 
 ### 接口地址
 
