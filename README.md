@@ -12,6 +12,7 @@
 - **复述详情**：点击知识点卡片进入详情页，回看上次复述原文、润色结果与评价细则
 - **复习闭环**：得分低于 60 自动进入复习列表，仪表盘卡片变红并显示「需复习」与上次得分
 - **AI 测评**：按知识点选择难度（基础/中等/困难）与题型（单选/简答）现场出题；单选题前端判分，简答题交给 AI 阅卷；答错自动把知识点加入复习列表
+- **AI 助手（RAG）**：与自己的整个知识库对话——后端先向量检索最相关的知识点片段，再由大模型据此作答，回答下方展示可点击的引用来源；知识库没有的内容会直说，不编造
 
 ## 技术栈
 
@@ -48,6 +49,7 @@ src/pages/KnowledgePointDetailPage.jsx 知识点详情与上次复述评价
 src/pages/FeynmanRecordPage.jsx  录音、可编辑转录与 AI 教练反馈
 src/pages/QuizPage.jsx           AI 出题测评（难度/题型切换、语音输入、AI 评分阅卷、答错入复习）
 src/pages/QuizHistoryPage.jsx    测评记录（分数/错题筛选/历史回顾）
+src/pages/AgentPage.jsx          AI 助手（RAG 知识库问答聊天界面）
 src/pages/LoginPage.jsx          登录
 src/pages/RegisterPage.jsx       注册
 src/utils/audio.js               录音转 16000Hz 单声道 PCM WAV
@@ -98,6 +100,12 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 `/quiz/:id/history` 由 `QuizHistoryPage` 渲染，页面取标题后请求 `GET /api/quiz/attempts?knowledgePointId=...&limit=100`，顶部显示总作答数与答错数；「全部记录 / 只看错题」切换会带上 `onlyWrong=true` 重新查询。每条记录按题型还原：单选高亮「你的选择」与「正确答案」，简答展示分数、三组反馈与阅卷意见。
 
 这个功能是否保留还在斟酌，因此当前**隐藏了所有入口**（测评页顶部/结果区、知识点详情页），`App.jsx` 里也没有挂载该路由，页面文件暂时保留。作答记录仍会在后台写入数据库，恢复时在 `App.jsx` 加回 `/quiz/:id/history` 路由并恢复入口即可。
+
+### AI 助手（课时11：RAG 问答）
+
+`/agent` 由 `AgentPage` 渲染，导航栏「AI助手」进入。聊天界面维护 `messages / inputValue / isLoading` 三个状态：发送后先把用户消息上屏，再调 `POST /ai/rag-qa`，等待期间显示三点跳动的「思考中」气泡，新消息自动平滑滚动到底部。
+
+机器人回答用 `MarkdownContent` 渲染（复用公式/代码高亮/流程图能力，且同样经过 XSS 消毒）；回答下方把后端返回的 `sources` 渲染成「引用来源」chips，点击跳转到对应知识点详情页，悬停可看检索片段摘要。后端返回的中文错误（凭证缺失、限流、欠费等）直接以红色气泡展示，网络中断才用兜底文案。
 
 ### 接口地址
 

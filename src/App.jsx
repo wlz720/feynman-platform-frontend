@@ -9,6 +9,7 @@ import KnowledgePointFormPage from './pages/KnowledgePointFormPage';
 import KnowledgePointDetailPage from './pages/KnowledgePointDetailPage';
 import FeynmanRecordPage from './pages/FeynmanRecordPage';
 import QuizPage from './pages/QuizPage';
+import AgentPage from './pages/AgentPage';
 
 function App() {
   return (
@@ -29,6 +30,8 @@ function App() {
           <Route path="/feynman/:id" element={<FeynmanRecordPage />} />
           {/* AI 出题测评页面 */}
           <Route path="/quiz/:id" element={<QuizPage />} />
+          {/* 课时11：AI 助手（RAG 私有知识库问答） */}
+          <Route path="/agent" element={<AgentPage />} />
         </Route>
       </Route>
     </Routes>

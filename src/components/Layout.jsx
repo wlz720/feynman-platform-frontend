@@ -22,12 +22,19 @@ function Layout() {
       }}>
         <div>
           {token ? (
-            <Link to="/" style={{
-              color: '#fff',
-              fontSize: '18px',
-              fontWeight: '600',
-              textDecoration: 'none'
-            }}>主页</Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <Link to="/" style={{
+                color: '#fff',
+                fontSize: '18px',
+                fontWeight: '600',
+                textDecoration: 'none'
+              }}>主页</Link>
+              <Link to="/agent" style={{
+                color: '#fff',
+                fontSize: '16px',
+                textDecoration: 'none'
+              }}>AI助手</Link>
+            </div>
           ) : (
             <>
               <Link to="/login" style={{
