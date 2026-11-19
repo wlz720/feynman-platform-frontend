@@ -117,6 +117,21 @@ function DashboardPage() {
                       🎤开始复述
                     </button>
                   </Link>
+                  <Link to={`/quiz/${kp._id}`}>
+                    <button
+                      style={{
+                        padding: '6px 12px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#3b82f6',
+                        color: 'white',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      📝 开始测评
+                    </button>
+                  </Link>
                   <button className={styles.btnDelete} onClick={() => handleDelete(kp._id)}>
                     删除
                   </button>

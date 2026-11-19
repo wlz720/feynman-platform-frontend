@@ -52,6 +52,11 @@ function KnowledgePointDetailPage() {
             🎤 开始复述
           </button>
         </Link>
+        <Link to={`/quiz/${kp._id}`}>
+          <button style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#3b82f6', color: '#fff' }}>
+            📝 开始测评
+          </button>
+        </Link>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

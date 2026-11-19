@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute'; // 引入路由守卫
 import KnowledgePointFormPage from './pages/KnowledgePointFormPage';
 import KnowledgePointDetailPage from './pages/KnowledgePointDetailPage';
 import FeynmanRecordPage from './pages/FeynmanRecordPage';
+import QuizPage from './pages/QuizPage';
 
 function App() {
   return (
@@ -26,6 +27,8 @@ function App() {
           <Route path="/kp/:id" element={<KnowledgePointDetailPage />} />
           {/* 费曼复述录音页面，需要登录 */}
           <Route path="/feynman/:id" element={<FeynmanRecordPage />} />
+          {/* AI 出题测评页面 */}
+          <Route path="/quiz/:id" element={<QuizPage />} />
         </Route>
       </Route>
     </Routes>
