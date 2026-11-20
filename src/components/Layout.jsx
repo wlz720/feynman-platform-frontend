@@ -7,6 +7,7 @@ const AUTH_LINKS = [
   { to: '/graph', label: '知识图谱' },
   { to: '/3d-world', label: '3D 视界' },
   { to: '/universe', label: '知识宇宙' },
+  { to: '/globe', label: '知识地球' },
 ];
 
 function Layout() {

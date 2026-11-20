@@ -203,11 +203,11 @@ function KnowledgePointDetailPage() {
             <div className={styles.textGrid}>
               <div className={styles.textPanel}>
                 <h3>我的复述原文</h3>
-                <p className={styles.textBody}>{attempt.transcribedText || '（无记录）'}</p>
+                <p className={`${styles.textBody} selectable`}>{attempt.transcribedText || '（无记录）'}</p>
               </div>
               <div className={styles.textPanel}>
                 <h3>AI 润色后的文本</h3>
-                <p className={styles.textBody}>{attempt.polishedText || '（无记录）'}</p>
+                <p className={`${styles.textBody} selectable`}>{attempt.polishedText || '（无记录）'}</p>
               </div>
             </div>
 

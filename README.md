@@ -119,11 +119,11 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 
 答错的题目会自动把知识点加入复习列表（`PUT /api/knowledge-points/:id` 写 `reviewList: true`），并在结果区提示；每次提交都会调用 `POST /api/quiz/attempts` 保存记录，成功显示「本次作答已保存到测评记录」，失败只提示、不影响结果展示。
 
-### 测评记录（暂时隐藏）
+### 测评记录
 
 `/quiz/:id/history` 由 `QuizHistoryPage` 渲染，页面取标题后请求 `GET /api/quiz/attempts?knowledgePointId=...&limit=100`，顶部显示总作答数与答错数；「全部记录 / 只看错题」切换会带上 `onlyWrong=true` 重新查询。每条记录按题型还原：单选高亮「你的选择」与「正确答案」，简答展示分数、三组反馈与阅卷意见。
 
-这个功能是否保留还在斟酌，因此当前**隐藏了所有入口**（测评页顶部/结果区、知识点详情页），`App.jsx` 里也没有挂载该路由，页面文件暂时保留。作答记录仍会在后台写入数据库，恢复时在 `App.jsx` 加回 `/quiz/:id/history` 路由并恢复入口即可。
+入口已恢复：测评页顶部与结果区、知识点详情页、复述页均有「测评记录」按钮。
 
 ### AI 助手（课时11：RAG 问答）
 
@@ -164,6 +164,16 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 5. **信息浮层**：选中后右下角面板展示标题、状态与 120 字摘要，「查看知识点详情」跳 `/kp/:id`；悬停有跟随鼠标的标题提示，右上角是状态图例与星球/航线数量。
 6. **资源管理**：切换或卸载时停止模拟与动画循环、移除指针监听，并 `dispose()` 几何体、材质与渲染器。
 
+### 知识地球（课时14：Cesium 数字地球）
+
+`/globe` 由 `GlobePage` 渲染，导航栏「知识地球」进入，是课时14原题「3D地球与Cesium」的落地：
+
+1. **离线底图**：用 Cesium 安装包自带的 NaturalEarthII 瓦片（`TileMapServiceImageryProvider.fromUrl(buildModuleUrl('Assets/Textures/NaturalEarthII'))`），不依赖 Cesium ion 或任何在线影像服务，断网也能渲染地球。`vite-plugin-static-copy` 把 `Workers/Assets/Widgets/ThirdParty` 复制到 `dist/cesium/`（dev 与 build 都生效），页面里用 `window.CESIUM_BASE_URL` 指向它。
+2. **知识点布点**：黄金角螺旋把节点均匀铺到球面（纬度限制在 ±60° 避免挤在极点），光点颜色 = 学习状态（绿/橙/紫，与图谱、3D 宇宙一致），大小随 `symbolSize` 缩放，外圈垫一层半透明光晕；标签用 Cesium Label，远到一定程度自动隐藏。
+3. **跨洲弧线**：引用边两端做球面插值（slerp），高度按 `sin(πt)` 抬升、距离越远弧顶越高，`PolylineGlowMaterialProperty` 渲染成发光航线。
+4. **交互**：地球绕地轴缓慢自转，`pointerdown/wheel` 时暂停 3 秒再恢复；`ScreenSpaceEventHandler` 悬停显示标题+状态提示、指针变手型，点击光点跳 `/kp/:id`。
+5. **性能与降级**：Cesium 约 4.9MB，`React.lazy` + 动态 `import()` 单独分包，只有进入 `/globe` 才下载；Workbox 用 `globIgnores: ['cesium/**']` 把上千个瓦片/Worker 排除出预缓存。Electron 的 `file://` 环境无法加载 Web Worker，页面给出中文提示引导去浏览器访问，其余功能不受影响。
+
 ### 跨平台：Electron 桌面端（课时15）
 
 `electron.cjs` 是主进程入口（`package.json` 的 `main`）。课程示例里的 `electron.js` 在本项目改名为 `.cjs`：前端 `package.json` 声明了 `"type": "module"`，同名 `.js` 会被当成 ESM，`require('electron')` 直接报错，而 `.cjs` 始终按 CommonJS 解析。
@@ -174,12 +184,12 @@ mermaid 体积较大，采用动态 `import()` 拆包，仅在渲染到含 `lang
 4. **资源路径**：`electron:build` 先用 `vite build --base ./` 生成相对路径产物，避免 `file://` 把 `/assets/...` 解析到磁盘根目录；Web/PWA 构建仍用绝对路径。
 5. **原生菜单（课后挑战）**：`Menu.buildFromTemplate` 提供「文件 → 退出」「视图 → 重新加载/开发者工具/缩放」「帮助 → 关于」，关于弹窗展示版本号。
 6. **安全边界**：`setWindowOpenHandler` 把站外链接交给系统浏览器；`will-navigate` 阻止窗口被导航到非本应用地址；权限处理只放行 `media`（录音需要麦克风），其余请求一律拒绝。
-7. **打包**：`npm run electron:build` 使用 `electron-builder`，产物在 `release/`（已 gitignore）。本次作业只完成集成与构建验证，没有实际产出安装包；首次打包会下载 Electron/NSIS 依赖，国内网络可在安装前设置 `ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`。
+7. **打包**：`npm run electron:build` 使用 `electron-builder` 产出 Windows NSIS 安装包到 `release/`（已 gitignore），安装时可选安装路径。首次打包会下载 Electron/NSIS 依赖，国内网络先设置镜像再打包：`ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`、`ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/`，避免 GitHub 直连超时。
 
 ### 跨平台：PWA（课时15）
 
 1. **Manifest**：`vite.config.js` 的 `VitePWA` 配置生成 `dist/manifest.webmanifest`——名称「费曼学习平台」、`display: standalone`、主题色 `#8b5cf6`、192/512 两种图标（512 同时声明 `maskable`），图标由 `public/pwa-*.png` 提供。
-2. **Service Worker**：`workbox` 预缓存应用外壳（`**/*.{js,css,html,svg,png,ico,woff2}`，129 个文件约 7.5MB）；主包超过 Workbox 默认 2MB 上限，因此把 `maximumFileSizeToCacheInBytes` 调到 5MB。`navigateFallback: '/index.html'` 保证离线时直接访问 `/agent` 也能回到 SPA；`navigateFallbackDenylist` 排除 `/api`，接口请求不会被当成页面。
+2. **Service Worker**：`workbox` 预缓存应用外壳（`**/*.{js,css,html,svg,png,ico,woff2}`，135 个文件约 12.2MB）；主包超过 Workbox 默认 2MB 上限，因此把 `maximumFileSizeToCacheInBytes` 调到 5MB；`globIgnores: ['cesium/**']` 把 Cesium 的上千个瓦片/Worker 排除出预缓存，按需走 HTTP 缓存。`navigateFallback: '/index.html'` 保证离线时直接访问 `/agent` 也能回到 SPA；`navigateFallbackDenylist` 排除 `/api`，接口请求不会被当成页面。
 3. **注册时机**：`registerType: 'autoUpdate'` + `injectRegister: null`，在 `main.jsx` 里仅当生产构建、协议为 http(s) 且浏览器支持 Service Worker 时注册；Electron 的 `file://` 直接跳过，避免控制台报错。
 4. **离线测试**：`npm run build && npm run preview`，Chrome 打开预览地址 → F12 → Application → Manifest 可看到图标与名称，Service Workers 显示 `sw.js` 已激活；Network 勾选 Offline 后刷新，应用外壳仍能打开（后端接口此时不可用，属预期）。地址栏/菜单出现「安装」即可添加到桌面或主屏。
 

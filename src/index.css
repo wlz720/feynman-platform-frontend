@@ -128,12 +128,22 @@ button:disabled,
   backdrop-filter: blur(6px);
 }
 
-/* 只禁止按钮/导航的文本选中，正文允许复制，方便用户取用笔记 */
-button,
-.nav-link,
-.brand {
+/* 界面文字（标题/标签/统计等）禁用文本选中：
+   点击时不会出现闪烁的插入光标；笔记正文与输入区仍可选中复制 */
+body {
   -webkit-user-select: none;
   user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+.markdown-body,
+.markdown-body *,
+.selectable,
+.selectable * {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 button,

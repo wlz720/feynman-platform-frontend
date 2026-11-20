@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -14,6 +15,9 @@ import AgentPage from './pages/AgentPage';
 import GraphPage from './pages/GraphPage';
 import ThreeJSPage from './pages/ThreeJSPage';
 import KnowledgeUniversePage from './pages/KnowledgeUniversePage';
+
+// 课时14：Cesium 数字地球。Cesium 体积大，懒加载单独分包，不影响其他页面首屏
+const GlobePage = lazy(() => import('./pages/GlobePage'));
 
 function App() {
   return (
@@ -44,6 +48,15 @@ function App() {
           <Route path="/3d-world" element={<ThreeJSPage />} />
           {/* 课时14：3D 知识宇宙（d3-force-3d 力导向布局 + 点击信息浮层） */}
           <Route path="/universe" element={<KnowledgeUniversePage />} />
+          {/* 课时14：Cesium 知识地球（离线底图，懒加载） */}
+          <Route
+            path="/globe"
+            element={(
+              <Suspense fallback={<div className="page"><p className="page-subtitle">正在加载知识地球…</p></div>}>
+                <GlobePage />
+              </Suspense>
+            )}
+          />
         </Route>
       </Route>
     </Routes>
