@@ -3,6 +3,25 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import apiClient from '../api/axios';
 import MarkdownContent from '../components/MarkdownContent';
 import { STATUS_LABELS } from '../utils/kpStatus';
+import styles from './KnowledgePointDetailPage.module.css';
+
+const STATUS_BADGE = {
+  not_started: 'badge-neutral',
+  need_review: 'badge-warning',
+  mastered: 'badge-success',
+};
+
+function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 function KnowledgePointDetailPage() {
   const { id } = useParams();
@@ -11,141 +30,214 @@ function KnowledgePointDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const fetchKp = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await apiClient.get(`/knowledge-points/${id}`);
+      setKp(res.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.msg ||
+          (err.response
+            ? `加载知识点失败（HTTP ${err.response.status}）`
+            : '无法连接后端服务，请确认后端已启动')
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchKp = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get(`/knowledge-points/${id}`);
-        setKp(res.data);
-      } catch (err) {
-        setError(err.response?.data?.msg || err.message || '获取知识点失败');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchKp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (loading) return <p style={{ padding: 20 }}>加载中...</p>;
-  if (error) return <p style={{ padding: 20, color: '#dc2626' }}>{error}</p>;
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="card card-pad">
+          <div className="loading-block">
+            <span className="spinner" />
+            正在加载知识点…
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="empty-state">
+          <div className="empty-icon">⚠️</div>
+          <h3 className="empty-title">知识点加载失败</h3>
+          <p className="empty-text">{error}</p>
+          <div className="row">
+            <button type="button" className="btn btn-primary" onClick={fetchKp}>
+              重新加载
+            </button>
+            <Link to="/" className="btn btn-secondary">
+              返回主页
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!kp) return null;
 
   const attempt = kp.lastAttempt;
-  const scoreColor = attempt?.score >= 80 ? '#16a34a' : attempt?.score >= 60 ? '#f59e0b' : '#dc2626';
+  const statusKey = kp.status || 'not_started';
+  const ringColor =
+    attempt?.score >= 80 ? '#10b981' : attempt?.score >= 60 ? '#8b5cf6' : '#ef4444';
 
   return (
-    <div style={{ maxWidth: 860, margin: '30px auto', padding: '0 20px' }}>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-        <button
-          onClick={() => navigate('/')}
-          style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #aaa', background: '#fff' }}
-        >
-          返回仪表盘
-        </button>
-        <Link to={`/kp/edit/${kp._id}`}>
-          <button style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #8b5cf6', background: '#fff', color: '#8b5cf6' }}>
-            编辑
-          </button>
-        </Link>
-        <Link to={`/feynman/${kp._id}`}>
-          <button style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff' }}>
-            🎤 开始复述
-          </button>
-        </Link>
-        <Link to={`/quiz/${kp._id}`}>
-          <button style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#3b82f6', color: '#fff' }}>
-            📝 开始测评
-          </button>
-        </Link>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <h1 style={{ color: '#5b21b6', margin: 0 }}>{kp.title}</h1>
-        {kp.reviewList && (
-          <span style={{ padding: '3px 10px', borderRadius: 999, background: '#fee2e2', color: '#b91c1c', fontSize: 13 }}>
-            ● 需复习
-          </span>
-        )}
-      </div>
-      <p style={{ color: '#6b7280', fontSize: 14, marginTop: 8 }}>
-        状态：{STATUS_LABELS[kp.status] || kp.status}
-        {attempt && (
-          <>
-            {'　|　上次得分：'}
-            <strong style={{ color: scoreColor }}>{attempt.score}</strong>
-            {'　|　复述时间：'}
-            {attempt.createdAt ? new Date(attempt.createdAt).toLocaleString('zh-CN') : '未知'}
-          </>
-        )}
-      </p>
-
-      <h2 style={{ color: '#4c1d95', fontSize: 20, marginTop: 26 }}>知识点内容</h2>
-      <div
-        style={{
-          background: '#fbfaff',
-          border: '1px solid #e9d5ff',
-          borderRadius: 12,
-          padding: '16px 22px',
-          lineHeight: 1.75,
-        }}
+    <div className="page">
+      <button
+        type="button"
+        className="btn btn-ghost btn-sm"
+        onClick={() => navigate('/')}
+        style={{ marginBottom: 12 }}
       >
-        <MarkdownContent>{kp.content}</MarkdownContent>
-      </div>
+        ← 返回知识点列表
+      </button>
 
-      <h2 style={{ color: '#4c1d95', fontSize: 20, marginTop: 30 }}>上次复述与 AI 评价</h2>
-
-      {!attempt ? (
-        <p style={{ color: '#6b7280' }}>
-          还没有复述记录。点上方「🎤 开始复述」录一段，AI 会给出润色与评分。
-        </p>
-      ) : (
-        <div>
-          <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ color: '#4c1d95' }}>我的复述原文</h3>
-              <p style={{ background: '#f9fafb', padding: '1rem', borderRadius: 10, whiteSpace: 'pre-wrap' }}>
-                {attempt.transcribedText || '（无记录）'}
-              </p>
-
-              <h3 style={{ color: '#4c1d95' }}>AI 润色后的文本</h3>
-              <p style={{ background: '#eef2ff', padding: '1rem', borderRadius: 10, whiteSpace: 'pre-wrap' }}>
-                {attempt.polishedText || '（无记录）'}
-              </p>
-
-              <h3 style={{ color: '#4c1d95' }}>综合评价</h3>
-              <p style={{ lineHeight: 1.7 }}>{attempt.evaluation || '（无记录）'}</p>
-
-              {attempt.strengths?.length > 0 && (
-                <>
-                  <h3 style={{ color: '#4c1d95' }}>优点 👍</h3>
-                  <ul style={{ lineHeight: 1.8 }}>
-                    {attempt.strengths.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-
-              {attempt.weaknesses?.length > 0 && (
-                <>
-                  <h3 style={{ color: '#4c1d95' }}>待改进 👇</h3>
-                  <ul style={{ lineHeight: 1.8 }}>
-                    {attempt.weaknesses.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-
-            <div style={{ flex: '0 0 150px', textAlign: 'center' }}>
-              <h3 style={{ color: '#4c1d95' }}>上次得分</h3>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', color: scoreColor }}>{attempt.score}</div>
-              <div style={{ color: '#6b7280', fontSize: 13 }}>/ 100</div>
-            </div>
+      <section className={styles.hero}>
+        <div className={styles.heroMain}>
+          <div className={styles.badges}>
+            <span className={`badge ${STATUS_BADGE[statusKey] || 'badge-neutral'}`}>
+              {STATUS_LABELS[statusKey] || '未开始'}
+            </span>
+            {kp.reviewList && <span className="badge badge-danger">● 需复习</span>}
+            {typeof attempt?.score === 'number' && (
+              <span className="badge badge-brand">上次 {attempt.score} 分</span>
+            )}
+          </div>
+          <h1 className={styles.title}>{kp.title}</h1>
+          <p className={styles.meta}>
+            {kp.createdAt ? `创建于 ${formatDateTime(kp.createdAt)}` : '知识点详情'}
+            {attempt?.createdAt ? ` · 上次复述 ${formatDateTime(attempt.createdAt)}` : ''}
+          </p>
+          <div className={styles.actions}>
+            <Link to={`/feynman/${kp._id}`} className="btn btn-success">
+              🎙 开始复述
+            </Link>
+            <Link to={`/quiz/${kp._id}`} className="btn btn-primary">
+              📝 开始测评
+            </Link>
+            <Link to={`/quiz/${kp._id}/history`} className="btn btn-secondary">
+              测评记录
+            </Link>
+            <Link to={`/kp/edit/${kp._id}`} className="btn btn-secondary">
+              ✎ 编辑
+            </Link>
           </div>
         </div>
-      )}
+      </section>
+
+      <section className={`card card-pad ${styles.contentCard}`}>
+        <div className={styles.sectionHead}>
+          <div>
+            <h2 className="section-title">知识点内容</h2>
+            <p className="section-subtitle">你整理的核心概念与笔记。</p>
+          </div>
+          <span className={styles.sectionMeta}>{(kp.content || '').length} 字</span>
+        </div>
+        <div className={`markdown-body ${styles.contentBody}`}>
+          <MarkdownContent>{kp.content || '（暂无内容）'}</MarkdownContent>
+        </div>
+      </section>
+
+      <section className={`card card-pad ${styles.resultCard}`}>
+        <div className={styles.sectionHead}>
+          <div>
+            <h2 className="section-title">上次复述与 AI 评价</h2>
+            <p className="section-subtitle">
+              录音转写、AI 润色与评分都会保留，方便对比自己的表达变化。
+            </p>
+          </div>
+          {attempt && (
+            <Link to={`/feynman/${kp._id}`} className="btn btn-ghost btn-sm">
+              再复述一次 →
+            </Link>
+          )}
+        </div>
+
+        {!attempt ? (
+          <div className="empty-state" style={{ padding: '38px 20px' }}>
+            <div className="empty-icon">🎙️</div>
+            <h3 className="empty-title">还没有复述记录</h3>
+            <p className="empty-text">
+              录一段 1–3 分钟的口头复述，AI 会给出润色文本、评分和改进建议。
+            </p>
+            <Link to={`/feynman/${kp._id}`} className="btn btn-success">
+              开始第一次复述
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className={styles.resultTop}>
+              <div className={styles.scoreWrap}>
+                <div
+                  className="score-ring"
+                  style={{ '--score': attempt.score, '--ring-color': ringColor }}
+                >
+                  <span className="score-ring-value">{attempt.score}</span>
+                  <span className="score-ring-label">分 / 100</span>
+                </div>
+                <span className={styles.scoreCaption}>
+                  {attempt.score >= 80
+                    ? '讲得很清楚，保持住'
+                    : attempt.score >= 60
+                      ? '基本讲清，还能更具体'
+                      : '建议回到原文补盲区'}
+                </span>
+              </div>
+              <blockquote className={styles.evaluation}>
+                {attempt.evaluation || '（AI 暂未给出综合评价）'}
+              </blockquote>
+            </div>
+
+            <div className={styles.textGrid}>
+              <div className={styles.textPanel}>
+                <h3>我的复述原文</h3>
+                <p className={styles.textBody}>{attempt.transcribedText || '（无记录）'}</p>
+              </div>
+              <div className={styles.textPanel}>
+                <h3>AI 润色后的文本</h3>
+                <p className={styles.textBody}>{attempt.polishedText || '（无记录）'}</p>
+              </div>
+            </div>
+
+            {(attempt.strengths?.length > 0 || attempt.weaknesses?.length > 0) && (
+              <div className={styles.lists}>
+                {attempt.strengths?.length > 0 && (
+                  <div className={`${styles.listCard} ${styles.success}`}>
+                    <h3>优点 👍</h3>
+                    <ul>
+                      {attempt.strengths.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {attempt.weaknesses?.length > 0 && (
+                  <div className={`${styles.listCard} ${styles.warning}`}>
+                    <h3>待改进 👇</h3>
+                    <ul>
+                      {attempt.weaknesses.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }

@@ -1,5 +1,13 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+
+const AUTH_LINKS = [
+  { to: '/', label: '主页', end: true },
+  { to: '/agent', label: 'AI 助手' },
+  { to: '/graph', label: '知识图谱' },
+  { to: '/3d-world', label: '3D 视界' },
+  { to: '/universe', label: '知识宇宙' },
+];
 
 function Layout() {
   const { token, user, logout } = useAuth();
@@ -11,86 +19,70 @@ function Layout() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#faf8ff' }}>
-      <nav style={{
-        background: '#8b5cf6',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 2px 8px rgba(139, 92, 246, 0.25)'
-      }}>
-        <div>
+    <div className="app-shell">
+      <header className="app-nav">
+        <div className="nav-inner">
+          <Link className="brand" to={token ? '/' : '/login'}>
+            <span className="brand-mark">F</span>
+            <span className="brand-text">
+              <strong>费曼学习平台</strong>
+              <small>FEYNMAN LEARNING LAB</small>
+            </span>
+          </Link>
+
           {token ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-              <Link to="/" style={{
-                color: '#fff',
-                fontSize: '18px',
-                fontWeight: '600',
-                textDecoration: 'none'
-              }}>主页</Link>
-              <Link to="/agent" style={{
-                color: '#fff',
-                fontSize: '16px',
-                textDecoration: 'none'
-              }}>AI助手</Link>
-              <Link to="/graph" style={{
-                color: '#fff',
-                fontSize: '16px',
-                textDecoration: 'none'
-              }}>知识图谱</Link>
-              <Link to="/3d-world" style={{
-                color: '#fff',
-                fontSize: '16px',
-                textDecoration: 'none'
-              }}>3D视界</Link>
-              <Link to="/universe" style={{
-                color: '#fff',
-                fontSize: '16px',
-                textDecoration: 'none'
-              }}>知识宇宙</Link>
-            </div>
+            <nav className="nav-links" aria-label="主导航">
+              {AUTH_LINKS.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.end}
+                  className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
           ) : (
-            <>
-              <Link to="/login" style={{
-                color: '#fff',
-                fontSize: '16px',
-                textDecoration: 'none',
-                marginRight: '24px'
-              }}>登录</Link>
-              <Link to="/register" style={{
-                color: '#fff',
-                fontSize: '16px',
-                textDecoration: 'none'
-              }}>注册</Link>
-            </>
+            <nav className="nav-links" aria-label="账号导航">
+              <NavLink
+                to="/login"
+                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+              >
+                登录
+              </NavLink>
+              <NavLink
+                to="/register"
+                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+              >
+                注册
+              </NavLink>
+            </nav>
+          )}
+
+          {token && user && (
+            <div className="nav-user">
+              <span className="avatar" aria-hidden="true">
+                {(user.username || 'U').slice(0, 1).toUpperCase()}
+              </span>
+              <span className="nav-user-name">{user.username}</span>
+              <button type="button" className="logout-btn" onClick={handleLogout}>
+                退出
+              </button>
+            </div>
           )}
         </div>
+      </header>
 
-        {token && user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ color: '#fff', fontSize: '16px' }}>欢迎，{user.username}</span>
-            <button
-              onClick={handleLogout}
-              style={{
-                border: '1px solid white',
-                background: 'transparent',
-                color: '#fff',
-                padding: '6px 14px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              退出登录
-            </button>
-          </div>
-        )}
-      </nav>
-
-      <main style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
+      <main className="app-main">
         <Outlet />
       </main>
+
+      <footer className="app-footer">
+        <span>费曼学习平台 · 用输出倒逼输入</span>
+        <span className="footer-dot">·</span>
+        <span>React + Express + AI</span>
+      </footer>
     </div>
   );
 }

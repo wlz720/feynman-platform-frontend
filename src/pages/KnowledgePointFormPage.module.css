@@ -1,0 +1,115 @@
+/* 知识点编辑页 */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+
+.backLink:hover {
+  color: var(--brand-700);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 18px;
+  align-items: start;
+}
+
+.editorCard {
+  padding: 26px;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tipCard {
+  padding: 18px 19px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(250, 249, 255, 0.96), #fff);
+  box-shadow: var(--shadow-xs);
+}
+
+.tipTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 750;
+  color: var(--brand-800);
+}
+
+.tipList {
+  margin: 0;
+  padding-left: 17px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.85;
+}
+
+.tipList li {
+  margin: 4px 0;
+}
+
+.codeBlock {
+  margin: 0;
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: #f6f3fc;
+  border: 1px solid var(--line);
+  color: #5b21b6;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.metaRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.metaRow .label {
+  margin: 0;
+}
+
+.charCount {
+  font-size: 11.5px;
+  color: #9aa0b2;
+  font-variant-numeric: tabular-nums;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .side {
+    order: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}

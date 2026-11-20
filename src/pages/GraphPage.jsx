@@ -1,27 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import ReactEChartsCore from 'echarts-for-react/lib/core';
 import * as echarts from 'echarts/core';
 import { GraphChart } from 'echarts/charts';
 import { TooltipComponent, LegendComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import apiClient from '../api/axios';
+import styles from './GraphPage.module.css';
 
-// 按需注册：只打包力导向图需要的模块，避免整包 echarts 撑大主 bundle
 echarts.use([GraphChart, TooltipComponent, LegendComponent, CanvasRenderer]);
 
-// 课时12：知识图谱可视化（ECharts 力导向图）
-// 节点 = 知识点，边 = 引用关系（A 的正文提到了 B 的标题）。
-// 课后挑战题已实现：按 status / reviewList 给节点着色。
 const STATUS_COLORS = {
-  mastered: '#22c55e', // 已掌握：绿
-  need_review: '#f97316', // 需复习：橙
-  not_started: '#8b5cf6' // 未开始：平台主题紫
+  mastered: '#22c55e',
+  need_review: '#f97316',
+  not_started: '#8b5cf6',
 };
 
 function nodeColor(node) {
   if (node.reviewList) return STATUS_COLORS.need_review;
   return STATUS_COLORS[node.status] || STATUS_COLORS.not_started;
+}
+
+// Tooltip 通过 HTML 渲染，知识点标题/正文来自用户输入，必须转义，避免 XSS
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function GraphPage() {
@@ -35,10 +42,19 @@ function GraphPage() {
     apiClient
       .get('/graph/knowledge-map')
       .then((response) => {
-        if (!cancelled) setGraphData(response.data);
+        if (!cancelled) {
+          setGraphData({
+            nodes: response.data?.nodes || [],
+            links: response.data?.links || [],
+          });
+        }
       })
       .catch((err) => {
-        if (!cancelled) setError(err.response?.data?.msg || '获取图谱数据失败，请确认后端已启动');
+        if (!cancelled) {
+          setError(
+            err.response?.data?.msg || '获取图谱数据失败，请确认后端已启动'
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -48,73 +64,117 @@ function GraphPage() {
     };
   }, []);
 
+  const counts = useMemo(() => {
+    const nodes = graphData.nodes || [];
+    return {
+      mastered: nodes.filter((node) => !node.reviewList && node.status === 'mastered').length,
+      need_review: nodes.filter(
+        (node) => node.reviewList || node.status === 'need_review'
+      ).length,
+      not_started: nodes.filter(
+        (node) => !node.reviewList && node.status !== 'mastered' && node.status !== 'need_review'
+      ).length,
+    };
+  }, [graphData.nodes]);
+
   const option = useMemo(
     () => ({
       tooltip: {
+        confine: true,
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        borderColor: '#ddd6fe',
+        borderWidth: 1,
+        padding: [10, 12],
+        textStyle: { color: '#1f2330', fontSize: 12.5, lineHeight: 20 },
+        extraCssText: 'box-shadow: 0 12px 30px rgba(76,29,149,.16); border-radius: 10px;',
         formatter: (params) => {
           if (params.dataType === 'edge') {
-            return '引用关系：正文中提到了该知识点的标题';
+            return '<b>引用关系</b><br/>正文中提到了该知识点的标题';
           }
           const node = params.data;
           const statusText = node.reviewList
             ? '需复习'
-            : { mastered: '已掌握', need_review: '需复习', not_started: '未开始' }[node.status] || '未开始';
-          const created = node.createdAt ? new Date(node.createdAt).toLocaleDateString() : '';
-          return `<b>${node.name}</b><br/>状态：${statusText}${created ? `<br/>创建于：${created}` : ''}<br/>${(node.value || '').slice(0, 60)}...<br/><i>点击节点查看详情</i>`;
-        }
+            : { mastered: '已掌握', need_review: '需复习', not_started: '未开始' }[
+                node.status
+              ] || '未开始';
+          const created = node.createdAt
+            ? new Date(node.createdAt).toLocaleDateString('zh-CN')
+            : '';
+          const excerpt = String(node.value || '').slice(0, 80);
+          return [
+            `<b style="color:#4c1d95">${escapeHtml(node.name)}</b>`,
+            `状态：${escapeHtml(statusText)}${created ? ` · 创建于 ${escapeHtml(created)}` : ''}`,
+            excerpt ? `${escapeHtml(excerpt)}${String(node.value || '').length > 80 ? '…' : ''}` : '',
+            '<span style="color:#8b5cf6">点击节点查看详情</span>',
+          ]
+            .filter(Boolean)
+            .join('<br/>');
+        },
       },
       legend: {
         data: ['已掌握', '需复习', '未开始'],
-        bottom: 0,
-        textStyle: { color: '#6b7280' }
+        bottom: 8,
+        icon: 'circle',
+        itemWidth: 9,
+        itemHeight: 9,
+        textStyle: { color: '#6b7280', fontSize: 12 },
       },
       series: [
         {
           type: 'graph',
           layout: 'force',
-          roam: true, // 鼠标缩放和平移漫游
-          draggable: true, // 拖拽节点调整布局
+          roam: true,
+          draggable: true,
           categories: [
             { name: '已掌握', itemStyle: { color: STATUS_COLORS.mastered } },
             { name: '需复习', itemStyle: { color: STATUS_COLORS.need_review } },
-            { name: '未开始', itemStyle: { color: STATUS_COLORS.not_started } }
+            { name: '未开始', itemStyle: { color: STATUS_COLORS.not_started } },
           ],
           data: graphData.nodes.map((node) => ({
             ...node,
-            category: node.reviewList ? 1 : node.status === 'mastered' ? 0 : node.status === 'need_review' ? 1 : 2,
-            itemStyle: { color: nodeColor(node) },
-            label: { show: true }
+            category: node.reviewList
+              ? 1
+              : node.status === 'mastered'
+                ? 0
+                : node.status === 'need_review'
+                  ? 1
+                  : 2,
+            itemStyle: {
+              color: nodeColor(node),
+              shadowBlur: 14,
+              shadowColor: 'rgba(76, 29, 149, 0.18)',
+            },
+            label: { show: true },
           })),
           links: graphData.links.map((link) => ({
             ...link,
             lineStyle: { color: '#c4b5fd', width: 1.5, curveness: 0.1 },
-            emphasis: { lineStyle: { width: 4, color: '#8b5cf6' } }
+            emphasis: { lineStyle: { width: 4, color: '#8b5cf6' } },
           })),
-          edgeSymbol: ['none', 'arrow'], // 引用方向：A → B
+          edgeSymbol: ['none', 'arrow'],
           edgeSymbolSize: 7,
           label: {
             show: true,
             position: 'right',
             formatter: '{b}',
-            fontSize: 12,
-            color: '#374151'
+            fontSize: 11.5,
+            color: '#374151',
           },
           force: {
-            repulsion: 220, // 节点间斥力
+            repulsion: 240,
             edgeLength: [60, 140],
-            gravity: 0.08
+            gravity: 0.08,
           },
           emphasis: {
-            focus: 'adjacency', // 悬停高亮该节点及一度邻居
-            lineStyle: { width: 4 }
-          }
-        }
-      ]
+            focus: 'adjacency',
+            lineStyle: { width: 4 },
+          },
+        },
+      ],
     }),
     [graphData]
   );
 
-  // 点击节点跳转到知识点详情页（比课件跳编辑页更贴合「查看」直觉）
   const onChartClick = (params) => {
     if (params.componentType === 'series' && params.dataType === 'node') {
       navigate(`/kp/${params.data.id}`);
@@ -122,32 +182,93 @@ function GraphPage() {
   };
 
   if (loading) {
-    return <p style={{ color: '#6b7280' }}>正在生成知识图谱...</p>;
+    return (
+      <div className="page">
+        <div className="card card-pad">
+          <div className="loading-block">
+            <span className="spinner" />
+            正在生成知识图谱…
+          </div>
+        </div>
+      </div>
+    );
   }
+
   if (error) {
-    return <p style={{ color: '#b91c1c' }}>{error}</p>;
+    return (
+      <div className="page">
+        <div className="empty-state">
+          <div className="empty-icon">⚠️</div>
+          <h3 className="empty-title">知识图谱加载失败</h3>
+          <p className="empty-text">{error}</p>
+          <Link to="/" className="btn btn-primary">
+            返回主页
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#4c1d95', margin: '0 0 6px' }}>知识图谱</h1>
-      <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px' }}>
-        展示知识点之间的引用关系（正文提到其他知识点标题即连线）。可拖拽节点、滚轮缩放；悬停高亮关联，点击节点查看详情。
-        颜色：<span style={{ color: STATUS_COLORS.mastered }}>绿=已掌握</span>、
-        <span style={{ color: STATUS_COLORS.need_review }}>橙=需复习</span>、
-        <span style={{ color: STATUS_COLORS.not_started }}>紫=未开始</span>。
-      </p>
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">KNOWLEDGE GRAPH</span>
+          <h1 className="page-title">知识图谱</h1>
+          <p className="page-subtitle">
+            每个节点是一个知识点，连线表示「正文提到了另一个知识点的标题」。
+            拖拽节点、滚轮缩放，悬停高亮关联，点击节点进入详情。
+          </p>
+        </div>
+        <span className="badge badge-brand">{graphData.nodes.length} 个节点</span>
+      </div>
+
+      <div className={styles.legendRow}>
+        <span className={styles.legendPill}>
+          <span className={styles.legendDot} style={{ background: STATUS_COLORS.mastered }} />
+          已掌握 <span className={styles.legendCount}>{counts.mastered}</span>
+        </span>
+        <span className={styles.legendPill}>
+          <span className={styles.legendDot} style={{ background: STATUS_COLORS.need_review }} />
+          需复习 <span className={styles.legendCount}>{counts.need_review}</span>
+        </span>
+        <span className={styles.legendPill}>
+          <span className={styles.legendDot} style={{ background: STATUS_COLORS.not_started }} />
+          未开始 <span className={styles.legendCount}>{counts.not_started}</span>
+        </span>
+      </div>
+
       {graphData.nodes.length === 0 ? (
-        <p style={{ color: '#6b7280' }}>还没有知识点，先去主页创建几个吧。让一个知识点的正文提到另一个的标题，就能看到连线。</p>
+        <div className={styles.emptyCard}>
+          <div className="empty-state">
+            <div className="empty-icon">🕸️</div>
+            <h3 className="empty-title">图谱还没有节点</h3>
+            <p className="empty-text">
+              先创建几个知识点；让一个知识点的正文提到另一个知识点的标题，就会出现连线。
+            </p>
+            <Link to="/kp/new" className="btn btn-primary">
+              + 新建知识点
+            </Link>
+          </div>
+        </div>
       ) : (
-        <div style={{ background: '#fff', border: '1px solid #e5e0f5', borderRadius: 12, padding: 8 }}>
-          <ReactEChartsCore
-            echarts={echarts}
-            option={option}
-            notMerge
-            style={{ height: '620px', width: '100%' }}
-            onEvents={{ click: onChartClick }}
-          />
+        <div className={styles.chartCard}>
+          <div className={styles.chartHead}>
+            <div className={styles.chartTitle}>
+              <strong>引用关系图</strong>
+              <span>节点大小与正文长度相关，颜色表示掌握状态</span>
+            </div>
+            <span className={styles.chartBadge}>🖱 可拖拽 · 可缩放</span>
+          </div>
+          <div className={styles.chartBox}>
+            <ReactEChartsCore
+              echarts={echarts}
+              option={option}
+              notMerge
+              style={{ height: 'clamp(440px, 64vh, 640px)', width: '100%' }}
+              onEvents={{ click: onChartClick }}
+            />
+          </div>
         </div>
       )}
     </div>

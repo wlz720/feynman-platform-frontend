@@ -1,0 +1,94 @@
+/* 知识图谱页 */
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.legendPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow-xs);
+  font-size: 12.5px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.legendDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendCount {
+  font-weight: 800;
+  color: var(--brand-800);
+  font-variant-numeric: tabular-nums;
+}
+
+.chartCard {
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #fdfcff, #fff);
+}
+
+.chartTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chartTitle strong {
+  font-size: 14px;
+  color: var(--brand-900);
+}
+
+.chartTitle span {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.chartBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+  color: var(--brand-700);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.chartBox {
+  padding: 4px;
+  background:
+    radial-gradient(700px 420px at 50% 0%, rgba(237, 233, 254, 0.5), transparent 70%),
+    #fff;
+}
+
+.emptyCard {
+  padding: 20px;
+}

@@ -1,146 +1,334 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../api/axios';
 import { Link, useNavigate } from 'react-router-dom';
 import MarkdownContent from '../components/MarkdownContent';
 import { STATUS_LABELS } from '../utils/kpStatus';
 import styles from './DashboardPage.module.css';
 
+const STATUS_BADGE = {
+  not_started: 'badge-neutral',
+  need_review: 'badge-warning',
+  mastered: 'badge-success',
+};
+
+const FILTERS = [
+  { key: 'all', label: '全部' },
+  { key: 'need_review', label: '待复习' },
+  { key: 'mastered', label: '已掌握' },
+  { key: 'not_started', label: '未开始' },
+];
+
+function formatDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function scoreBadgeClass(score) {
+  if (score >= 80) return 'badge badge-success';
+  if (score >= 60) return 'badge badge-brand';
+  return 'badge badge-danger';
+}
+
 function DashboardPage() {
   const navigate = useNavigate();
   const [knowledgePoints, setKnowledgePoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState('');
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    const fetchKnowledgePoints = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get('/knowledge-points');
-        setKnowledgePoints(response.data);
-      } catch (err) {
-        setError('获取知识点失败');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchKnowledgePoints();
-  }, []);
-
-  const handleDelete = async (id) => {
-    if (window.confirm('你确定要删除这个知识点吗？')) {
-      try {
-        await apiClient.delete(`/knowledge-points/${id}`);
-        setKnowledgePoints((prev) => prev.filter((kp) => kp._id !== id));
-      } catch (error) {
-        console.error('删除失败', error);
-      }
+  const loadKnowledgePoints = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await apiClient.get('/knowledge-points');
+      setKnowledgePoints(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error(err);
+      setError(
+        err.response
+          ? `加载知识点失败（HTTP ${err.response.status}），请稍后重试`
+          : '无法连接后端服务，请确认后端已启动（http://localhost:3000）'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) return <p>加载中...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  useEffect(() => {
+    loadKnowledgePoints();
+  }, []);
+
+  const stats = useMemo(() => {
+    const total = knowledgePoints.length;
+    const needReview = knowledgePoints.filter(
+      (kp) => kp.reviewList || kp.status === 'need_review'
+    ).length;
+    const mastered = knowledgePoints.filter((kp) => kp.status === 'mastered').length;
+    const notStarted = knowledgePoints.filter((kp) => kp.status === 'not_started').length;
+    const scores = knowledgePoints
+      .map((kp) => kp.lastAttempt?.score)
+      .filter((score) => typeof score === 'number');
+    const avgScore = scores.length
+      ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+      : null;
+    const maxScore = scores.length ? Math.max(...scores) : null;
+    return { total, needReview, mastered, notStarted, avgScore, maxScore };
+  }, [knowledgePoints]);
+
+  const filteredPoints = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return knowledgePoints.filter((kp) => {
+      const matchesFilter =
+        filter === 'all' ||
+        (filter === 'need_review' && (kp.reviewList || kp.status === 'need_review')) ||
+        (filter === 'mastered' && kp.status === 'mastered') ||
+        (filter === 'not_started' && kp.status === 'not_started');
+      if (!matchesFilter) return false;
+      if (!keyword) return true;
+      return `${kp.title || ''} ${kp.content || ''}`.toLowerCase().includes(keyword);
+    });
+  }, [knowledgePoints, filter, query]);
+
+  const handleDelete = async (kp) => {
+    if (deletingId) return;
+    const confirmed = window.confirm(`确定删除「${kp.title}」吗？删除后无法恢复。`);
+    if (!confirmed) return;
+    setActionError('');
+    setDeletingId(kp._id);
+    try {
+      await apiClient.delete(`/knowledge-points/${kp._id}`);
+      setKnowledgePoints((prev) => prev.filter((item) => item._id !== kp._id));
+    } catch (err) {
+      console.error(err);
+      const backendMsg = err.response?.data?.msg;
+      setActionError(
+        backendMsg
+          ? `删除失败：${backendMsg}`
+          : err.response
+            ? `删除失败（HTTP ${err.response.status}），请稍后重试`
+            : '删除失败：无法连接后端服务'
+      );
+    } finally {
+      setDeletingId('');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="card card-pad">
+          <div className="loading-block">
+            <span className="spinner" />
+            正在加载你的知识点…
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="empty-state">
+          <div className="empty-icon">⚠️</div>
+          <h3 className="empty-title">知识点加载失败</h3>
+          <p className="empty-text">{error}</p>
+          <button type="button" className="btn btn-primary" onClick={loadKnowledgePoints}>
+            重新加载
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto', padding: '20px 16px' }}>
-      <h1 style={{ color: '#5b21b6', marginBottom: 18 }}>我的知识点</h1>
-      <Link to="/kp/new">
-        <button
-          style={{
-            background: '#8b5cf6',
-            color: 'white',
-            border: 'none',
-            padding: '10px 18px',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 500,
-            boxShadow: '0 4px 12px rgba(139,92,246,0.25)',
-          }}
-        >
-          + 新建知识点
-        </button>
-      </Link>
-      <div style={{ marginTop: 28 }}>
-        {knowledgePoints.length === 0 ? (
-          <p style={{ color: '#6b7280' }}>你还没有知识点，快去创建一个吧！</p>
-        ) : (
-          <ul style={{ paddingLeft: 0, listStyle: 'none' }}>
-            {knowledgePoints.map((kp) => (
-              <li
+    <div className="page">
+      <section className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <span className={styles.heroEyebrow}>LEARNING DASHBOARD</span>
+          <h1 className={styles.heroTitle}>我的知识点</h1>
+          <p className={styles.heroSub}>
+            把每一次复述都变成看得见的进步。先讲一遍，再让 AI 教练告诉你哪里还没讲清。
+          </p>
+          <div className={styles.heroActions}>
+            <Link to="/kp/new" className={styles.btnHero}>
+              + 新建知识点
+            </Link>
+            <Link to="/agent" className={styles.btnHeroGhost}>
+              ✨ 问 AI 助手
+            </Link>
+          </div>
+        </div>
+        <div className={styles.heroMetrics}>
+          <div className={styles.heroMetric}>
+            <span className={styles.heroMetricValue}>{stats.total}</span>
+            <span className={styles.heroMetricLabel}>知识点总数</span>
+          </div>
+          <div className={styles.heroMetricDivider} />
+          <div className={styles.heroMetric}>
+            <span className={styles.heroMetricValue}>{stats.mastered}</span>
+            <span className={styles.heroMetricLabel}>已掌握</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="stat-grid" style={{ marginBottom: 20 }}>
+        <div className="stat-card">
+          <p className="stat-label">待复习</p>
+          <p className="stat-value danger">{stats.needReview}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">未开始</p>
+          <p className="stat-value">{stats.notStarted}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">平均复述得分</p>
+          <p className="stat-value">{stats.avgScore === null ? '—' : stats.avgScore}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">最高得分</p>
+          <p className="stat-value success">{stats.maxScore === null ? '—' : stats.maxScore}</p>
+        </div>
+      </div>
+
+      {actionError && (
+        <div className={`alert alert-error ${styles.alertBar}`} role="alert">
+          <span>{actionError}</span>
+          <button
+            type="button"
+            className={styles.alertClose}
+            onClick={() => setActionError('')}
+          >
+            关闭
+          </button>
+        </div>
+      )}
+
+      <div className="toolbar">
+        <div className="search-box">
+          <span className="search-icon" aria-hidden="true">
+            ⌕
+          </span>
+          <input
+            className="input"
+            type="search"
+            placeholder="搜索标题或内容…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="搜索知识点"
+          />
+        </div>
+        <div className="toolbar-group">
+          <div className="segmented" role="tablist" aria-label="按状态筛选">
+            {FILTERS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={filter === item.key ? 'active' : ''}
+                onClick={() => setFilter(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <span className={styles.filterCount}>共 {filteredPoints.length} 个</span>
+        </div>
+      </div>
+
+      {filteredPoints.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📚</div>
+          <h3 className="empty-title">
+            {knowledgePoints.length === 0 ? '还没有知识点' : '没有符合条件的知识点'}
+          </h3>
+          <p className="empty-text">
+            {knowledgePoints.length === 0
+              ? '创建一个知识点，写清楚它的核心概念，然后用录音把它讲一遍。'
+              : '换个关键词，或者把筛选条件切回“全部”看看。'}
+          </p>
+          {knowledgePoints.length === 0 ? (
+            <Link to="/kp/new" className="btn btn-primary">
+              + 创建第一个知识点
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setQuery('');
+                setFilter('all');
+              }}
+            >
+              清除筛选
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className={styles.kpGrid}>
+          {filteredPoints.map((kp) => {
+            const statusKey = kp.status || 'not_started';
+            const score = kp.lastAttempt?.score;
+            return (
+              <article
                 key={kp._id}
-                className={`${styles.kpCard} ${kp.reviewList ? styles.kpCardReview : ''}`}
+                className={`${styles.kpCard} ${kp.reviewList ? styles.review : ''}`}
                 onClick={(e) => {
-                  // 卡片内的链接/按钮有自己的动作，点它们时不要跳详情
                   if (e.target.closest('a, button')) return;
                   navigate(`/kp/${kp._id}`);
                 }}
-                style={{ cursor: 'pointer' }}
                 title="点击查看知识点详情与上次复述评价"
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <h2 style={{ margin: '0 0 6px 0', color: '#4c1d95', fontSize: 20 }}>{kp.title}</h2>
-                  {kp.reviewList && <span className={styles.reviewBadge}>● 需复习</span>}
-                  {typeof kp.lastAttempt?.score === 'number' && (
-                    <span
-                      className={`${styles.scoreBadge} ${
-                        kp.lastAttempt.score < 60 ? styles.scoreBadgeLow : ''
-                      }`}
-                    >
-                      上次得分 {kp.lastAttempt.score}
-                    </span>
+                <div className={styles.kpTop}>
+                  <span className={`badge ${STATUS_BADGE[statusKey] || 'badge-neutral'}`}>
+                    {STATUS_LABELS[statusKey] || '未开始'}
+                  </span>
+                  {typeof score === 'number' && (
+                    <span className={scoreBadgeClass(score)}>上次 {score} 分</span>
                   )}
+                  <span className={styles.kpDate}>{formatDate(kp.createdAt)}</span>
                 </div>
-                <p style={{ margin: '4px 0 12px 0', color: '#6b7280', fontSize: 14 }}>
-                  状态: {STATUS_LABELS[kp.status] || kp.status}
-                </p>
-                <div className={styles.markdownBox}>
-                  <MarkdownContent>{kp.content}</MarkdownContent>
+
+                <h2 className={styles.kpTitle}>{kp.title}</h2>
+
+                <div className={styles.kpPreview}>
+                  <MarkdownContent>{kp.content || '（暂无内容）'}</MarkdownContent>
                 </div>
-                <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
-                  <Link to={`/kp/edit/${kp._id}`}>
-                    <button className={styles.btnEdit}>编辑</button>
+
+                <div className={styles.kpFoot}>
+                  <Link
+                    to={`/feynman/${kp._id}`}
+                    className={`${styles.action} ${styles.actionRecord}`}
+                  >
+                    🎙 复述
                   </Link>
-                  {/* 费曼复述录音跳转按钮 */}
-                  <Link to={`/feynman/${kp._id}`}>
-                    <button
-                      style={{
-                        padding: '6px 12px',
-                        border: 'none',
-                        borderRadius: '6px',
-                        background: '#10b981',
-                        color: 'white',
-                        cursor: 'pointer',
-                        outline: 'none'
-                      }}
-                    >
-                      🎤开始复述
-                    </button>
+                  <Link
+                    to={`/quiz/${kp._id}`}
+                    className={`${styles.action} ${styles.actionQuiz}`}
+                  >
+                    📝 测评
                   </Link>
-                  <Link to={`/quiz/${kp._id}`}>
-                    <button
-                      style={{
-                        padding: '6px 12px',
-                        border: 'none',
-                        borderRadius: '6px',
-                        background: '#3b82f6',
-                        color: 'white',
-                        cursor: 'pointer',
-                        outline: 'none'
-                      }}
-                    >
-                      📝 开始测评
-                    </button>
+                  <Link to={`/kp/edit/${kp._id}`} className={styles.action}>
+                    ✎ 编辑
                   </Link>
-                  <button className={styles.btnDelete} onClick={() => handleDelete(kp._id)}>
-                    删除
+                  <button
+                    type="button"
+                    className={`${styles.action} ${styles.actionDelete}`}
+                    onClick={() => handleDelete(kp)}
+                    disabled={deletingId === kp._id}
+                  >
+                    {deletingId === kp._id ? '删除中…' : '删除'}
                   </button>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

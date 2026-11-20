@@ -1,28 +1,32 @@
 import { useState } from 'react';
 import apiClient from '../api/axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AuthShell from '../components/AuthShell';
+import './AuthPages.css';
+
 function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError('');
+    setIsSubmitting(true);
     try {
       const response = await apiClient.post('/users/login', formData);
       login(response.data.token, response.data.user);
-      alert('登录成功！');
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
-      // 优先读取后端返回msg；连不上后端和密码错误要分开提示，否则会误导
       const backendMsg = err.response?.data?.msg;
       if (backendMsg) {
         setError(backendMsg);
@@ -31,96 +35,83 @@ function LoginPage() {
       } else {
         setError('无法连接后端服务，请确认后端已启动（http://localhost:3000）');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '70vh'
-    }}>
-      <div style={{
-        width: '420px',
-        padding: '36px',
-        background: '#ffffff',
-        borderRadius: '16px',
-        boxShadow: '0 4px 16px rgba(139, 92, 246, 0.18)'
-      }}>
-        <h1 style={{ textAlign: 'center', color: '#5b21b6', marginBottom: '28px' }}>用户登录</h1>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#4b5563' }}>邮箱：</label>
+    <AuthShell
+      eyebrow="WELCOME BACK"
+      title="登录你的学习空间"
+      subtitle="继续记录每一次复述，让知识真正留下来。"
+      footer={
+        <>
+          <p className="auth-switch">
+            还没有账号？<Link to="/register">立即注册</Link>
+          </p>
+          <p className="auth-note">忘记密码？请联系课程管理员重置。</p>
+        </>
+      }
+    >
+      {error && (
+        <div className="alert alert-error auth-alert" role="alert">
+          {error}
+        </div>
+      )}
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="field">
+          <label className="label" htmlFor="login-email">
+            邮箱
+          </label>
+          <input
+            id="login-email"
+            className="input"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="field">
+          <label className="label" htmlFor="login-password">
+            密码
+          </label>
+          <div className="input-wrap">
             <input
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '12px 14px',
-                border: '1px solid #ddd6fe',
-                borderRadius: '10px',
-                fontSize: '15px',
-                outlineColor: '#8b5cf6'
-              }}
-            />
-          </div>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#4b5563' }}>密码：</label>
-            <input
+              id="login-password"
+              className="input"
               name="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="请输入密码"
               value={formData.password}
               onChange={handleChange}
               required
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '12px 14px',
-                border: '1px solid #ddd6fe',
-                borderRadius: '10px',
-                fontSize: '15px',
-                outlineColor: '#8b5cf6'
-              }}
             />
+            <button
+              type="button"
+              className="input-suffix"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? '隐藏密码' : '显示密码'}
+            >
+              {showPassword ? '隐藏' : '显示'}
+            </button>
           </div>
-          {/* 新增忘记密码，放在密码框下方 */}
-          <div style={{textAlign:'right', marginBottom:'24px'}}>
-            <span
-              style={{
-                color:'#8b5cf6',
-                cursor:'pointer',
-                fontSize:'14px'
-              }}
-              onClick={()=>{
-                alert('重置密码功能将在后续课时开发！');
-              }}
-            >忘记密码？</span>
-          </div>
-          <button
-            type="submit"
-            style={{
-              width: '100%',
-              padding: '13px',
-              background: '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              outline: 'none' // 解决按钮点击闪烁光标
-            }}
-          >
-            登录
-          </button>
-        </form>
-        {error && <p style={{ color: '#dc2626', textAlign: 'center', marginTop: '20px' }}>{error}</p>}
-      </div>
-    </div>
+        </div>
+        <button
+          type="submit"
+          className="btn btn-primary btn-lg btn-block"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? '登录中…' : '登录'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }
+
 export default LoginPage;

@@ -1,162 +1,369 @@
-/* 只作用于 DashboardPage 的局部样式 */
+/* 主页专用样式：顶部 Hero + 知识点卡片网格 */
 
-.markdownBox {
-  background: #ffffff;
-  padding: 18px 22px;
-  border-radius: 12px;
-  margin: 14px 0;
-  border: 1px solid #e9d5ff;
-  line-height: 1.75;
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 32px 34px;
+  margin-bottom: 18px;
+  border-radius: 26px;
+  color: #fff;
+  background:
+    radial-gradient(560px 320px at 92% -10%, rgba(147, 197, 253, 0.4), transparent 62%),
+    radial-gradient(480px 320px at 6% 110%, rgba(244, 114, 182, 0.32), transparent 60%),
+    linear-gradient(135deg, #2e1065 0%, #5b21b6 52%, #7c3aed 100%);
+  box-shadow: 0 26px 55px rgba(59, 7, 100, 0.26);
 }
 
-/* Markdown 标题 */
-.markdownBox :global(h1),
-.markdownBox :global(h2),
-.markdownBox :global(h3) {
-  color: #4c1d95;
-  margin-top: 18px;
-  margin-bottom: 10px;
-  font-weight: 600;
+.hero::after {
+  content: "";
+  position: absolute;
+  right: 34%;
+  bottom: -140px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  pointer-events: none;
 }
 
-.markdownBox :global(h1) {
-  font-size: 24px;
-  border-bottom: 2px solid #ddd6fe;
-  padding-bottom: 8px;
+.heroCopy {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 420px;
 }
 
-.markdownBox :global(h2) {
-  font-size: 20px;
+.heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.66);
 }
 
-.markdownBox :global(h3) {
-  font-size: 17px;
+.heroEyebrow::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
 }
 
-/* Markdown 段落 */
-.markdownBox :global(p) {
-  margin: 10px 0;
-  color: #374151;
+.heroTitle {
+  margin: 10px 0 8px;
+  font-size: clamp(28px, 3.8vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
-/* Markdown 列表 */
-.markdownBox :global(ul),
-.markdownBox :global(ol) {
-  padding-left: 22px;
-  margin: 10px 0;
-  color: #374151;
+.heroSub {
+  margin: 0;
+  max-width: 520px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13.5px;
+  line-height: 1.8;
 }
 
-.markdownBox :global(li) {
-  margin: 6px 0;
+.heroActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
 }
 
-/* Markdown 表格 */
-.markdownBox :global(table) {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 14px 0;
-  font-size: 14px;
-}
-
-.markdownBox :global(th),
-.markdownBox :global(td) {
-  border: 1px solid #d8b4fe;
-  padding: 8px 12px;
-  text-align: left;
-}
-
-.markdownBox :global(th) {
-  background-color: #f3e8ff;
-  color: #5b21b6;
-  font-weight: 600;
-}
-
-.markdownBox :global(tr:nth-child(even)) {
-  background-color: #faf5ff;
-}
-
-/* 按钮样式 */
-.btnEdit {
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid #8b5cf6;
+.btnHero {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border-radius: 11px;
+  border: 1px solid transparent;
   background: #fff;
-  color: #8b5cf6;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
+  color: var(--brand-800);
+  font-size: 13.5px;
+  font-weight: 750;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(15, 8, 40, 0.2);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.btnEdit:hover {
-  background: #8b5cf6;
+.btnHero:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(15, 8, 40, 0.26);
+}
+
+.btnHeroGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
+  font-size: 13.5px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 0.16s ease, border-color 0.16s ease;
 }
 
-.btnDelete {
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: none;
-  background: #ef4444;
-  color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
+.btnHeroGhost:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.42);
 }
 
-.btnDelete:hover {
-  background: #dc2626;
+.heroMetrics {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 18px 24px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
 }
 
-/* 卡片轻微增强 */
+.heroMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 76px;
+}
+
+.heroMetricValue {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.heroMetricLabel {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.heroMetricDivider {
+  width: 1px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.kpGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 16px;
+}
+
 .kpCard {
-  border: 1px solid #ddd6fe;
-  margin: 16px 0;
-  padding: 22px;
-  border-radius: 16px;
-  background: #fbfaff;
-  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 19px 20px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .kpCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(139, 92, 246, 0.14);
+  transform: translateY(-3px);
+  border-color: var(--brand-200);
+  box-shadow: var(--shadow-md);
 }
 
-/* AI 评分低于阈值：整张卡片转为警示色 */
-.kpCardReview {
-  border: 1px solid #fca5a5;
-  background: #fff5f5;
-  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.12);
+.kpCard.review {
+  border-color: #fcd9a6;
 }
 
-.kpCardReview:hover {
-  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.18);
+.kpCard.review::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #fbbf24, #f59e0b);
 }
 
-.reviewBadge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: #fee2e2;
-  color: #b91c1c;
+.kpTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.kpDate {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: #9aa0b2;
+}
+
+.kpTitle {
+  margin: 0 0 10px;
+  font-size: 19px;
+  line-height: 1.4;
+  font-weight: 750;
+  color: var(--brand-900);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kpPreview {
+  position: relative;
+  flex: 1;
+  max-height: 128px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-soft);
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+}
+
+.kpPreview :global(.markdown-body) {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.kpPreview :global(.markdown-body h1),
+.kpPreview :global(.markdown-body h2),
+.kpPreview :global(.markdown-body h3) {
+  font-size: 15px;
+  margin: 6px 0;
+  border: none;
+  padding: 0;
+}
+
+.kpFoot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+  padding-top: 13px;
+  border-top: 1px dashed var(--line);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: var(--text-soft);
+  font-size: 12.5px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: all 0.16s ease;
+}
+
+.action:hover {
+  border-color: var(--brand-300);
+  background: var(--brand-50);
+  color: var(--brand-700);
+}
+
+.actionRecord {
+  border-color: transparent;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  box-shadow: 0 5px 12px rgba(5, 150, 105, 0.2);
+}
+
+.actionRecord:hover {
+  background: linear-gradient(135deg, #34d399, #059669);
+  color: #fff;
+  border-color: transparent;
+}
+
+.actionQuiz {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  color: #fff;
+  box-shadow: 0 5px 12px rgba(109, 40, 217, 0.2);
+}
+
+.actionQuiz:hover {
+  background: linear-gradient(135deg, var(--brand-400), var(--brand-700));
+  color: #fff;
+  border-color: transparent;
+}
+
+.actionDelete {
+  margin-left: auto;
+  border-color: transparent;
+  background: transparent;
+  color: #9aa0b2;
+}
+
+.actionDelete:hover {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger-text);
+}
+
+.alertBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.alertClose {
+  border: none;
+  background: transparent;
+  color: inherit;
   font-size: 12px;
-  font-weight: 600;
-  line-height: 1.8;
+  font-weight: 650;
+  opacity: 0.8;
+  flex-shrink: 0;
 }
 
-.scoreBadge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: #ede9fe;
-  color: #5b21b6;
-  font-size: 12px;
-  line-height: 1.8;
+.alertClose:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
-.scoreBadgeLow {
-  background: #fee2e2;
-  color: #b91c1c;
+.filterCount {
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    padding: 24px 22px;
+  }
+
+  .heroMetrics {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .heroMetric {
+    min-width: 0;
+  }
+
+  .kpGrid {
+    grid-template-columns: 1fr;
+  }
 }

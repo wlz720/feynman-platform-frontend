@@ -9,6 +9,7 @@ import KnowledgePointFormPage from './pages/KnowledgePointFormPage';
 import KnowledgePointDetailPage from './pages/KnowledgePointDetailPage';
 import FeynmanRecordPage from './pages/FeynmanRecordPage';
 import QuizPage from './pages/QuizPage';
+import QuizHistoryPage from './pages/QuizHistoryPage';
 import AgentPage from './pages/AgentPage';
 import GraphPage from './pages/GraphPage';
 import ThreeJSPage from './pages/ThreeJSPage';
@@ -17,10 +18,10 @@ import KnowledgeUniversePage from './pages/KnowledgeUniversePage';
 function App() {
   return (
     <Routes>
+      {/* 公开页面：独立全屏，不套用应用导航 */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route element={<Layout />}>
-        {/* 公开页面：不用登录就能访问 */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         {/* 受保护页面：必须登录才能访问 */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<DashboardPage />} />
@@ -33,6 +34,8 @@ function App() {
           <Route path="/feynman/:id" element={<FeynmanRecordPage />} />
           {/* AI 出题测评页面 */}
           <Route path="/quiz/:id" element={<QuizPage />} />
+          {/* 测评历史记录：按知识点查看全部作答与错题 */}
+          <Route path="/quiz/:id/history" element={<QuizHistoryPage />} />
           {/* 课时11：AI 助手（RAG 私有知识库问答） */}
           <Route path="/agent" element={<AgentPage />} />
           {/* 课时12：知识图谱（ECharts 力导向图） */}

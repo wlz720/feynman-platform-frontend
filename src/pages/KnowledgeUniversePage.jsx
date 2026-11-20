@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {
@@ -9,6 +9,7 @@ import {
   forceLink
 } from 'd3-force-3d';
 import apiClient from '../api/axios';
+import styles from './KnowledgeUniversePage.module.css';
 
 // 课时14：Three.js 进阶——数据驱动的 3D 知识宇宙
 // 与课时13 的 ThreeJSPage 的区别：
@@ -27,6 +28,12 @@ const STATUS_LABELS = {
   not_started: '未开始'
 };
 
+const STATUS_HEX = {
+  mastered: '#22c55e',
+  need_review: '#f97316',
+  not_started: '#8b5cf6'
+};
+
 function nodeColor(node) {
   if (node.reviewList) return STATUS_COLORS.need_review;
   return STATUS_COLORS[node.status] ?? STATUS_COLORS.not_started;
@@ -40,9 +47,12 @@ function nodeStatusLabel(node) {
 function KnowledgeUniversePage() {
   const mountRef = useRef(null);
   const navigate = useNavigate();
-  // navigate 通过 ref 透传：路由对象不进 3D useEffect 依赖，避免重建整个场景
+  // navigate 通过 ref 透传：路由对象不进 3D useEffect 依赖，避免重建整个场景；
+  // ref 写入放在 effect 里（渲染期间写 ref 违反 React 规范，lint 会告警）
   const navigateRef = useRef(navigate);
-  navigateRef.current = navigate;
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -415,164 +425,111 @@ function KnowledgeUniversePage() {
   const hasNodes = data && data.nodes.length > 0;
 
   return (
-    <div>
-      <div style={{ marginBottom: 12 }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#4c1d95', margin: '0 0 6px' }}>
-          3D 知识宇宙
-        </h1>
-        <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>
-          数据驱动的三维知识网络：力导向算法自动布局每颗知识星球，引用关系是星际航线。
-          拖拽旋转视角、滚轮缩放、点击星球查看内容摘要。
-        </p>
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">KNOWLEDGE UNIVERSE</span>
+          <h1 className="page-title">3D 知识宇宙</h1>
+          <p className="page-subtitle">
+            数据驱动的三维知识网络：力导向算法自动布局每颗知识星球，引用关系是星际航线。
+            拖拽旋转视角、滚轮缩放、点击星球查看内容摘要。
+          </p>
+        </div>
+        <Link to="/graph" className="btn btn-secondary">
+          切换到 2D 图谱
+        </Link>
       </div>
 
-      {loading && <p style={{ color: '#6b7280' }}>正在加载知识宇宙…</p>}
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      {loading && (
+        <div className="card card-pad">
+          <div className="loading-block">
+            <span className="spinner" />
+            正在加载知识宇宙…
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="alert alert-error" role="alert">
+          {error}
+        </div>
+      )}
       {!loading && data && data.nodes.length === 0 && (
-        <p style={{ color: '#6b7280' }}>
-          还没有知识点。先去主页创建几个，再回来看看你的知识星系。
-        </p>
+        <div className="empty-state">
+          <div className="empty-icon">🌌</div>
+          <h3 className="empty-title">星系还是空的</h3>
+          <p className="empty-text">
+            先去主页创建几个知识点，再回来看看你的知识星系如何生长。
+          </p>
+          <Link to="/kp/new" className="btn btn-primary">
+            + 新建知识点
+          </Link>
+        </div>
       )}
 
       {hasNodes && (
-        <div
-          style={{
-            position: 'relative',
-            marginTop: 16,
-            borderRadius: 12,
-            overflow: 'hidden',
-            background: '#070d1a'
-          }}
-        >
-          <div ref={mountRef} style={{ width: '100%', height: '74vh', minHeight: 460 }} />
-
-          {/* 操作提示 */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 14,
-              left: 14,
-              color: '#cbd5e1',
-              fontSize: 12,
-              lineHeight: 1.7,
-              background: 'rgba(15, 23, 42, 0.55)',
-              border: '1px solid rgba(148, 163, 184, 0.25)',
-              borderRadius: 8,
-              padding: '8px 12px',
-              pointerEvents: 'none'
-            }}
-          >
-            左键拖拽旋转 · 滚轮缩放 · 右键平移
-            <br />
-            点击星球查看知识点摘要
+        <div className={styles.universeCard}>
+          <div className={styles.stageHead}>
+            <div className={styles.stageTitle}>
+              <strong>知识星系</strong>
+              <span>d3-force-3d 力导向布局 · 节点会随引用关系自动靠拢</span>
+            </div>
+            <span className={styles.stageBadge}>🪐 点击星球查看摘要</span>
           </div>
+          <div className={styles.canvasWrap}>
+            <div ref={mountRef} className={styles.canvas} />
 
-          {/* 状态图例 */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 14,
-              right: 14,
-              background: 'rgba(15, 23, 42, 0.75)',
-              border: '1px solid rgba(148, 163, 184, 0.25)',
-              borderRadius: 8,
-              padding: '10px 12px',
-              fontSize: 12,
-              color: '#e2e8f0',
-              pointerEvents: 'none'
-            }}
-          >
-            {Object.entries(STATUS_LABELS).map(([key, label]) => (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    background: `#${STATUS_COLORS[key].toString(16).padStart(6, '0')}`
-                  }}
-                />
-                {label}
+            <div className={styles.helpCard}>
+              <strong>怎么逛这片星系</strong>
+              左键拖拽旋转 · 滚轮缩放 · 右键平移
+              <br />
+              点击星球查看知识点摘要
+            </div>
+
+            <div className={styles.legendCard}>
+              {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                <div key={key} className={styles.legendItem}>
+                  <span
+                    className={styles.legendDot}
+                    style={{ background: STATUS_HEX[key] }}
+                  />
+                  {label}
+                </div>
+              ))}
+              <div className={styles.legendMeta}>
+                {data.nodes.length} 颗星球 / {data.links.length} 条航线
               </div>
-            ))}
-            <div style={{ color: '#94a3b8', marginTop: 6 }}>{data.nodes.length} 颗星球 / {data.links.length} 条航线</div>
-          </div>
+            </div>
 
-          {/* 悬停提示：内容与位置由 3D 事件直接写 DOM，不触发 React 重渲染 */}
-          <div
-            ref={tooltipRef}
-            style={{
-              display: 'none',
-              position: 'absolute',
-              maxWidth: 240,
-              background: 'rgba(2, 6, 23, 0.9)',
-              color: '#f8fafc',
-              border: '1px solid rgba(148, 163, 184, 0.35)',
-              borderRadius: 6,
-              padding: '6px 10px',
-              fontSize: 12,
-              pointerEvents: 'none',
-              zIndex: 2
-            }}
-          />
+            <div ref={tooltipRef} className={styles.tooltip} />
 
-          {/* 选中信息浮层（课后挑战：替代 alert） */}
-          {selected && (
-            <div
-              style={{
-                position: 'absolute',
-                left: 16,
-                bottom: 16,
-                width: 340,
-                maxWidth: 'calc(100% - 32px)',
-                background: 'rgba(15, 23, 42, 0.92)',
-                border: '1px solid rgba(148, 163, 184, 0.35)',
-                borderRadius: 10,
-                padding: '14px 16px',
-                color: '#f8fafc',
-                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.35)'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{selected.name}</div>
+            {selected && (
+              <div className={styles.selectionCard}>
+                <div className={styles.selectionHead}>
+                  <div className={styles.selectionName}>{selected.name}</div>
+                  <button
+                    type="button"
+                    className={styles.closeBtn}
+                    onClick={() => clearSelectionRef.current?.()}
+                    aria-label="关闭知识点摘要"
+                  >
+                    ×
+                  </button>
+                </div>
+                <span className={styles.selectionStatus}>● {selected.statusLabel}</span>
+                <p className={styles.selectionPreview}>
+                  {selected.content.slice(0, 120)}
+                  {selected.content.length > 120 ? '…' : ''}
+                </p>
                 <button
-                  onClick={() => clearSelectionRef.current?.()}
-                  aria-label="关闭"
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: 16,
-                    lineHeight: 1
-                  }}
+                  type="button"
+                  className={styles.detailBtn}
+                  onClick={() => navigateRef.current(`/kp/${selected.id}`)}
                 >
-                  ×
+                  查看知识点详情 →
                 </button>
               </div>
-              <div style={{ fontSize: 12, color: '#fbbf24', margin: '6px 0 8px' }}>
-                {selected.statusLabel}
-              </div>
-              <p style={{ fontSize: 13, color: '#cbd5e1', margin: '0 0 12px', lineHeight: 1.6 }}>
-                {selected.content.slice(0, 120)}
-                {selected.content.length > 120 ? '…' : ''}
-              </p>
-              <button
-                onClick={() => navigateRef.current(`/kp/${selected.id}`)}
-                style={{
-                  border: '1px solid #8b5cf6',
-                  background: '#8b5cf6',
-                  color: '#fff',
-                  borderRadius: 6,
-                  padding: '6px 12px',
-                  cursor: 'pointer',
-                  fontSize: 13
-                }}
-              >
-                查看知识点详情 →
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

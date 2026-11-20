@@ -1,24 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useReactMediaRecorder } from 'react-media-recorder';
 import apiClient from '../api/axios';
 import MarkdownContent from '../components/MarkdownContent';
 import { blobToBaiduWav } from '../utils/audio';
+import styles from './QuizPage.module.css';
 
 const DIFFICULTIES = ['基础', '中等', '困难'];
 const TYPES = [
   { value: 'single-choice', label: '单选题' },
   { value: 'short-answer', label: '简答题' },
 ];
-
-const btnBase = {
-  padding: '7px 14px',
-  borderRadius: 8,
-  border: '1px solid #c4b5fd',
-  background: '#fff',
-  color: '#5b21b6',
-  cursor: 'pointer',
-};
 
 function QuizPage() {
   const { id } = useParams();
@@ -27,7 +19,6 @@ function QuizPage() {
   const [kp, setKp] = useState(null);
   const [loadError, setLoadError] = useState('');
 
-  // 难度和题型只是选择，必须点「开始出题」才真正请求模型
   const [type, setType] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [question, setQuestion] = useState(null);
@@ -43,6 +34,15 @@ function QuizPage() {
   const [saveMessage, setSaveMessage] = useState('');
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcribeError, setTranscribeError] = useState('');
+  const resultRef = useRef(null);
+
+  useEffect(() => {
+    if (!result) return;
+    const timer = setTimeout(() => {
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [result]);
 
   useEffect(() => {
     const fetchKp = async () => {
@@ -50,7 +50,12 @@ function QuizPage() {
         const res = await apiClient.get(`/knowledge-points/${id}`);
         setKp(res.data);
       } catch (err) {
-        setLoadError(err.response?.data?.msg || err.message || '获取知识点失败');
+        setLoadError(
+          err.response?.data?.msg ||
+            (err.response
+              ? `加载知识点失败（HTTP ${err.response.status}）`
+              : '无法连接后端服务，请确认后端已启动')
+        );
       }
     };
     fetchKp();
@@ -66,7 +71,12 @@ function QuizPage() {
     setTranscribeError('');
   };
 
-  // 录音转写结果追加到回答框，识别错的字用户可以直接改
+  const resetQuestion = () => {
+    setQuestion(null);
+    setQuestionError('');
+    resetAnswerState();
+  };
+
   const handleVoiceStop = useCallback(async (blobUrl, blob) => {
     if (!blob || !blob.size) {
       setTranscribeError('没有录到声音，请检查麦克风后重试');
@@ -102,8 +112,13 @@ function QuizPage() {
     audio: true,
     onStop: handleVoiceStop,
   });
+
   const isRecording = recordStatus === 'recording';
-  const micUnavailable = Boolean(recordError) || recordStatus === 'permission_denied' || recordStatus === 'failed';
+  const micUnavailable =
+    Boolean(recordError) ||
+    recordStatus === 'permission_denied' ||
+    recordStatus === 'no_specified_media_found' ||
+    recordStatus === 'media_in_use';
 
   const fetchQuestion = async () => {
     if (!kp || !type || !difficulty || isGenerating) return;
@@ -128,14 +143,15 @@ function QuizPage() {
   const saveAttempt = async (payload) => {
     try {
       await apiClient.post('/quiz/attempts', { knowledgePointId: id, ...payload });
-      setSaveMessage('本次作答已保存。');
+      setSaveMessage('本次作答已保存，可在「测评记录」中回看。');
     } catch (err) {
       console.error('保存测评记录失败', err);
-      setSaveMessage(`作答结果已显示，但保存记录失败：${err.response?.data?.msg || err.message}`);
+      setSaveMessage(
+        `作答结果已显示，但保存记录失败：${err.response?.data?.msg || err.message}`
+      );
     }
   };
 
-  // 每次测评都覆盖状态：及格即已掌握，不及格才进入复习列表
   const syncResultStatus = async (isCorrect) => {
     setReviewMessage('正在同步知识点状态…');
     try {
@@ -149,7 +165,9 @@ function QuizPage() {
           : '本次测评不及格，知识点已加入复习列表。'
       );
     } catch (err) {
-      setReviewMessage(`测评结果已显示，但更新知识点状态失败：${err.response?.data?.msg || err.message}`);
+      setReviewMessage(
+        `测评结果已显示，但更新知识点状态失败：${err.response?.data?.msg || err.message}`
+      );
     }
   };
 
@@ -202,8 +220,9 @@ function QuizPage() {
         knowledgePointTitle: kp.title,
         knowledgePointContent: kp.content,
       });
-      setResult(res.data);
-      if (!res.data.isCorrect) markNeedsReview();
+      const graded = res.data;
+      setResult(graded);
+      syncResultStatus(graded.isCorrect);
       saveAttempt({
         type: question.type,
         difficulty: question.difficulty,
@@ -211,12 +230,12 @@ function QuizPage() {
         answerKeyPoints: question.answerKeyPoints,
         studentAnswer: shortAnswer.trim(),
         explanation: question.explanation,
-        isCorrect: res.data.isCorrect,
-        score: res.data.score,
-        matchedPoints: res.data.matchedPoints,
-        beyondPoints: res.data.beyondPoints,
-        issues: res.data.issues,
-        feedbackExplanation: res.data.explanation,
+        isCorrect: graded.isCorrect,
+        score: graded.score,
+        matchedPoints: graded.matchedPoints,
+        beyondPoints: graded.beyondPoints,
+        issues: graded.issues,
+        feedbackExplanation: graded.explanation,
       });
     } catch (err) {
       setAnswerError(err.response?.data?.msg || err.message || 'AI 阅卷失败');
@@ -225,161 +244,196 @@ function QuizPage() {
     }
   };
 
-  if (loadError) return <p style={{ padding: 20, color: '#dc2626' }}>{loadError}</p>;
-  if (!kp) return <p style={{ padding: 20 }}>加载知识点信息...</p>;
+  const handleDifficultyChange = (value) => {
+    if (value === difficulty) return;
+    setDifficulty(value);
+    resetQuestion();
+  };
+
+  const handleTypeChange = (value) => {
+    if (value === type) return;
+    setType(value);
+    resetQuestion();
+  };
+
+  if (loadError) {
+    return (
+      <div className="page">
+        <div className="empty-state">
+          <div className="empty-icon">⚠️</div>
+          <h3 className="empty-title">无法打开测评</h3>
+          <p className="empty-text">{loadError}</p>
+          <div className="row">
+            <Link to="/" className="btn btn-primary">
+              返回主页
+            </Link>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => window.location.reload()}
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!kp) {
+    return (
+      <div className="page">
+        <div className="card card-pad">
+          <div className="loading-block">
+            <span className="spinner" />
+            正在加载知识点…
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const busy = isGenerating || isGrading;
-  const canStart = Boolean(type && difficulty) && !busy;
-  const selectionChanged =
-    Boolean(question) && (question.type !== type || question.difficulty !== difficulty);
-  const scoreColor = (value) => (value >= 80 ? '#16a34a' : value >= 60 ? '#f59e0b' : '#dc2626');
+  const setupLocked = busy || isRecording || isTranscribing;
+  const canStart = Boolean(type && difficulty) && !setupLocked;
+  const score = Number(result?.score) || 0;
+  const scoreColor = score >= 80 ? '#10b981' : score >= 60 ? '#8b5cf6' : '#ef4444';
+  const reviewFailed = reviewMessage.includes('失败');
 
-  const optionStyle = (key) => {
+  const optionClass = (key) => {
+    const classes = [styles.option];
     if (!result) {
-      return {
-        border: selectedOption === key ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
-        background: selectedOption === key ? '#f5f3ff' : '#fff',
-        opacity: 1,
-      };
+      if (selectedOption === key) classes.push(styles.selected);
+    } else if (key === question.answer) {
+      classes.push(styles.correct);
+    } else if (key === selectedOption) {
+      classes.push(styles.wrong);
+    } else {
+      classes.push(styles.dim);
     }
-    if (key === question.answer) {
-      return { border: '2px solid #16a34a', background: '#f0fdf4', opacity: 1 };
-    }
-    if (key === selectedOption) {
-      return { border: '2px solid #dc2626', background: '#fef2f2', opacity: 1 };
-    }
-    return { border: '1px solid #e5e7eb', background: '#fff', opacity: 0.55 };
+    return classes.join(' ');
   };
 
   const optionTag = (key) => {
     if (!result) return '';
-    if (key === question.answer) return '（正确答案）';
-    if (key === selectedOption) return '（你的选择）';
+    if (key === question.answer) return '正确答案';
+    if (key === selectedOption) return '你的选择';
     return '';
   };
 
   return (
-    <div style={{ maxWidth: 860, margin: '30px auto', padding: '0 20px' }}>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-        <button onClick={() => navigate(`/kp/${id}`)} style={btnBase}>
-          返回知识点详情
-        </button>
-        <Link to={`/feynman/${id}`}>
-          <button style={{ ...btnBase, border: 'none', background: '#10b981', color: '#fff' }}>
-            🎤 去复述
-          </button>
+    <div className="page">
+      <button
+        type="button"
+        className={styles.backLink}
+        onClick={() => navigate(`/kp/${id}`)}
+      >
+        ← 返回知识点详情
+      </button>
+
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">AI QUIZ</span>
+          <h1 className="page-title">AI 测评</h1>
+          <p className="page-subtitle">
+            知识点：{kp.title}。先选难度和题型，再让 AI 依据这份笔记出题。
+          </p>
+        </div>
+        <Link to={`/quiz/${id}/history`} className="btn btn-secondary">
+          测评记录
         </Link>
       </div>
 
-      <h1 style={{ color: '#5b21b6', marginBottom: 6 }}>AI 测评：{kp.title}</h1>
-      <p style={{ color: '#6b7280', fontSize: 14, marginTop: 0 }}>
-        先选好难度和题型，再点「开始出题」。出题依据只有下面这一个知识点，作答会自动保存。
-      </p>
-
-      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', margin: '18px 0' }}>
-        <div>
-          <span style={{ color: '#4c1d95', fontWeight: 600, marginRight: 8 }}>难度</span>
-          {DIFFICULTIES.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setDifficulty(item)}
-              disabled={busy}
-              style={{
-                ...btnBase,
-                marginRight: 8,
-                background: difficulty === item ? '#8b5cf6' : '#fff',
-                color: difficulty === item ? '#fff' : '#5b21b6',
-              }}
-            >
-              {item}
-            </button>
-          ))}
+      <section className={`card ${styles.setupCard}`}>
+        <div className={styles.setupGrid}>
+          <div className={styles.setupGroup}>
+            <span className={styles.setupLabel}>难度</span>
+            <div className="segmented" role="group" aria-label="选择难度">
+              {DIFFICULTIES.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={difficulty === item ? 'active' : ''}
+                  onClick={() => handleDifficultyChange(item)}
+                  disabled={setupLocked}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={styles.setupGroup}>
+            <span className={styles.setupLabel}>题型</span>
+            <div className="segmented" role="group" aria-label="选择题型">
+              {TYPES.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={type === item.value ? 'active' : ''}
+                  onClick={() => handleTypeChange(item.value)}
+                  disabled={setupLocked}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div>
-          <span style={{ color: '#4c1d95', fontWeight: 600, marginRight: 8 }}>题型</span>
-          {TYPES.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setType(item.value)}
-              disabled={busy}
-              style={{
-                ...btnBase,
-                marginRight: 8,
-                background: type === item.value ? '#8b5cf6' : '#fff',
-                color: type === item.value ? '#fff' : '#5b21b6',
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
+
+        <div className={styles.setupFoot}>
+          <button
+            type="button"
+            className="btn btn-primary btn-lg"
+            onClick={fetchQuestion}
+            disabled={!canStart}
+          >
+            {isGenerating ? 'AI 出题中…' : question ? '重新出题' : '开始出题'}
+          </button>
+          <span className={styles.setupHint}>
+            {!type || !difficulty
+              ? '请先选择难度和题型。'
+              : isGenerating
+                ? 'AI 正在根据当前知识点生成题目，请稍候。'
+                : '出题只依据当前这一个知识点，不会混入其他笔记。'}
+          </span>
+          <Link to={`/feynman/${id}`} className="btn btn-success btn-sm">
+            🎙 去复述
+          </Link>
         </div>
-      </div>
+      </section>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <button
-          type="button"
-          onClick={fetchQuestion}
-          disabled={!canStart}
-          style={{
-            padding: '9px 22px',
-            border: 'none',
-            borderRadius: 8,
-            background: canStart ? '#8b5cf6' : '#ddd6fe',
-            color: '#fff',
-            cursor: canStart ? 'pointer' : 'not-allowed',
-            fontSize: 15,
-          }}
-        >
-          {isGenerating ? 'AI 出题中…' : question ? '重新出题' : '开始出题'}
-        </button>
-        {!type || !difficulty ? (
-          <span style={{ color: '#6b7280', fontSize: 14 }}>请先选择难度和题型</span>
-        ) : (
-          selectionChanged && (
-            <span style={{ color: '#f59e0b', fontSize: 14 }}>
-              选择已更改，点「重新出题」生成新题
-            </span>
-          )
-        )}
-      </div>
-
-      {questionError && <p style={{ color: '#dc2626' }}>{questionError}</p>}
+      {questionError && (
+        <div className="alert alert-error" style={{ marginTop: 14 }} role="alert">
+          {questionError}
+        </div>
+      )}
 
       {question && (
-        <div
-          style={{
-            background: '#fbfaff',
-            border: '1px solid #e9d5ff',
-            borderRadius: 12,
-            padding: '18px 22px',
-          }}
-        >
-          <div style={{ color: '#8b5cf6', fontSize: 13, marginBottom: 10 }}>
-            {question.type === 'single-choice' ? '单选题' : '简答题'} · {question.difficulty}
+        <section className={`card ${styles.questionCard}`}>
+          <div className={styles.questionMeta}>
+            <span className="badge badge-brand">
+              {question.type === 'single-choice' ? '单选题' : '简答题'}
+            </span>
+            <span className="badge badge-neutral">{question.difficulty}</span>
+            {result && (
+              <span
+                className={`badge ${result.isCorrect ? 'badge-success' : 'badge-danger'}`}
+              >
+                {result.isCorrect ? '已答对' : '已作答'}
+              </span>
+            )}
+            <span className={styles.questionMetaRight}>题目依据：当前知识点</span>
           </div>
-          <div style={{ fontSize: 17, fontWeight: 600, color: '#3b0764' }}>
+
+          <div className={styles.questionText}>
             <MarkdownContent>{question.question}</MarkdownContent>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
+          <form className={styles.answerArea} onSubmit={handleSubmit}>
             {question.type === 'single-choice' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {Object.entries(question.options).map(([key, value]) => (
-                  <label
-                    key={key}
-                    style={{
-                      display: 'flex',
-                      gap: 10,
-                      alignItems: 'flex-start',
-                      padding: '10px 12px',
-                      borderRadius: 10,
-                      cursor: result ? 'default' : 'pointer',
-                      lineHeight: 1.6,
-                      ...optionStyle(key),
-                    }}
-                  >
+              <div className={styles.options}>
+                {Object.entries(question.options || {}).map(([key, value]) => (
+                  <label key={key} className={optionClass(key)}>
                     <input
                       type="radio"
                       name="option"
@@ -387,136 +441,147 @@ function QuizPage() {
                       checked={selectedOption === key}
                       onChange={(e) => setSelectedOption(e.target.value)}
                       disabled={Boolean(result)}
-                      style={{ marginTop: 4 }}
                     />
-                    <span>
-                      {key}. {value}
-                      {optionTag(key) && (
-                        <strong style={{ marginLeft: 6, color: key === question.answer ? '#16a34a' : '#dc2626' }}>
-                          {optionTag(key)}
-                        </strong>
-                      )}
-                    </span>
+                    <span className={styles.optionKey}>{key}</span>
+                    <span className={styles.optionText}>{value}</span>
+                    {optionTag(key) && <span className={styles.optionTag}>{optionTag(key)}</span>}
                   </label>
                 ))}
               </div>
             ) : (
               <>
                 <textarea
+                  className={`textarea ${styles.answerTextarea}`}
                   value={shortAnswer}
                   onChange={(e) => setShortAnswer(e.target.value)}
-                  placeholder="用你自己的话回答，也可以点下面的「语音输入」直接说，识别结果可以修改"
+                  placeholder="用你自己的话回答，也可以点下面的「语音输入」直接说，识别结果可以修改。"
                   rows={6}
                   readOnly={Boolean(result)}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: 12,
-                    borderRadius: 10,
-                    border: '1px solid #d1d5db',
-                    background: result ? '#f9fafb' : '#fff',
-                    fontSize: 15,
-                    lineHeight: 1.6,
-                    resize: 'vertical',
-                  }}
+                  aria-label="简答题回答"
                 />
 
                 {!result && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 10 }}>
+                  <div className={styles.voiceRow}>
                     <button
                       type="button"
+                      className={`btn btn-sm ${isRecording ? 'btn-danger' : 'btn-success'}`}
                       onClick={isRecording ? stopRecording : startRecording}
                       disabled={isGrading || isTranscribing}
-                      style={{
-                        padding: '7px 16px',
-                        borderRadius: 8,
-                        border: 'none',
-                        background: isRecording ? '#ef4444' : '#10b981',
-                        color: '#fff',
-                        cursor: isGrading || isTranscribing ? 'not-allowed' : 'pointer',
-                      }}
                     >
                       {isRecording ? '■ 停止录音' : '🎤 语音输入'}
                     </button>
-                    <span style={{ color: isRecording ? '#b91c1c' : '#6b7280', fontSize: 13 }}>
+                    <span
+                      className={`${styles.voiceHint} ${isRecording ? styles.recording : ''}`}
+                    >
                       {isTranscribing
                         ? '正在识别语音，请稍候…'
                         : isRecording
-                          ? '录音中，说完点「停止录音」，识别结果会填进回答框'
-                          : '手敲太慢可以直接说，识别结果可以修改后再提交'}
+                          ? '录音中，说完点「停止录音」，识别结果会填进回答框。'
+                          : '手敲太慢可以直接说，识别结果可以修改后再提交。'}
                     </span>
                   </div>
                 )}
+
                 {micUnavailable && (
-                  <p style={{ color: '#dc2626', margin: '8px 0 0' }}>
-                    无法使用麦克风（{recordStatus === 'permission_denied' ? '浏览器未授权' : '设备不可用'}），请在地址栏允许麦克风权限后重试，或直接打字作答。
-                  </p>
+                  <div className="alert alert-warning inlineAlert">
+                    无法使用麦克风（
+                    {recordStatus === 'permission_denied' ? '浏览器未授权' : '设备不可用'}
+                    ），请在地址栏允许麦克风权限后重试，或直接打字作答。
+                  </div>
                 )}
-                {transcribeError && <p style={{ color: '#dc2626', margin: '8px 0 0' }}>{transcribeError}</p>}
+
+                {transcribeError && (
+                  <div className="alert alert-error inlineAlert" role="alert">
+                    {transcribeError}
+                  </div>
+                )}
               </>
             )}
 
-            {answerError && <p style={{ color: '#dc2626' }}>{answerError}</p>}
+            {answerError && (
+              <div className="alert alert-error inlineAlert" role="alert">
+                {answerError}
+              </div>
+            )}
 
             {!result && (
-              <button
-                type="submit"
-                disabled={busy || isRecording || isTranscribing}
-                style={{
-                  marginTop: 16,
-                  padding: '9px 20px',
-                  border: 'none',
-                  borderRadius: 8,
-                  background: busy || isRecording || isTranscribing ? '#c4b5fd' : '#8b5cf6',
-                  color: '#fff',
-                  cursor: busy || isRecording || isTranscribing ? 'not-allowed' : 'pointer',
-                  fontSize: 15,
-                }}
-              >
-                {isGrading ? 'AI 阅卷中…' : isTranscribing ? '语音识别中…' : '提交答案'}
-              </button>
+              <div className={styles.submitRow}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={busy || isRecording || isTranscribing}
+                >
+                  {isGrading
+                    ? 'AI 阅卷中…'
+                    : isTranscribing
+                      ? '语音识别中…'
+                      : '提交答案'}
+                </button>
+                <span className="hint">提交后 AI 会依据知识点内容阅卷，结果自动保存。</span>
+              </div>
             )}
           </form>
 
           {result && (
-            <div style={{ marginTop: 18, borderTop: '1px dashed #e9d5ff', paddingTop: 16 }}>
-              <h2 style={{ margin: '0 0 10px', color: result.isCorrect ? '#16a34a' : '#dc2626' }}>
-                {result.isCorrect ? '回答正确' : '回答错误'}
-              </h2>
+            <div className={styles.resultPanel} ref={resultRef}>
+              <div
+                className={`${styles.resultBanner} ${
+                  result.isCorrect ? styles.ok : styles.bad
+                }`}
+              >
+                <span className={styles.resultIcon}>{result.isCorrect ? '✓' : '!'}</span>
+                <div>
+                  <h2>
+                    {question.type === 'short-answer'
+                      ? result.isCorrect
+                        ? '回答合格'
+                        : '还需要补一补'
+                      : result.isCorrect
+                        ? '回答正确'
+                        : '回答错误'}
+                  </h2>
+                  <p>
+                    {question.type === 'short-answer'
+                      ? 'AI 依据当前知识点阅卷，60 分及格。'
+                      : result.isCorrect
+                        ? '选择正确，继续保持。'
+                        : '选择错误，看看下面的解析找关键差别。'}
+                  </p>
+                </div>
+              </div>
 
-              {question.type === 'short-answer' && typeof result.score === 'number' && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: 10,
-                    flexWrap: 'wrap',
-                    margin: '0 0 14px',
-                    padding: '10px 16px',
-                    borderRadius: 10,
-                    background: '#faf5ff',
-                    border: '1px solid #e9d5ff',
-                  }}
-                >
-                  <span style={{ color: '#6b7280', fontSize: 14 }}>得分</span>
-                  <span style={{ fontSize: 34, fontWeight: 700, color: scoreColor(result.score) }}>
-                    {result.score}
-                  </span>
-                  <span style={{ color: '#6b7280' }}>/ 100 分</span>
-                  <span style={{ color: '#6b7280', fontSize: 13 }}>
-                    （60 分及格，低于 60 分自动加入复习列表）
-                  </span>
+              {question.type === 'short-answer' && (
+                <div className={styles.scoreSummary}>
+                  <div className={styles.scoreLine}>
+                    <span className={styles.scoreNumber} style={{ color: scoreColor }}>
+                      {score}
+                    </span>
+                    <span className={styles.scoreTotal}>/ 100 分</span>
+                    <span className={styles.scoreHint}>60 分及格，低于 60 分自动加入复习列表</span>
+                  </div>
+                  <div className={styles.scoreTrack}>
+                    <div
+                      className={styles.scoreFill}
+                      style={{ width: `${Math.min(100, Math.max(0, score))}%`, background: scoreColor }}
+                    />
+                  </div>
                 </div>
               )}
 
               {question.type === 'single-choice' ? (
                 <>
-                  <p style={{ margin: '6px 0' }}>
-                    正确答案：<strong>{question.answer}</strong>　你的选择：
-                    <strong>{result.studentAnswer}</strong>
-                  </p>
+                  <div className={styles.choiceLine}>
+                    <span className={`${styles.choicePill} ${styles.correct}`}>
+                      正确答案：{result.correctAnswer}
+                    </span>
+                    {!result.isCorrect && (
+                      <span className={`${styles.choicePill} ${styles.picked}`}>
+                        你的选择：{result.studentAnswer}
+                      </span>
+                    )}
+                  </div>
                   {result.explanation && (
-                    <p style={{ color: '#4b5563', lineHeight: 1.7 }}>
+                    <p className={styles.explanation}>
                       <strong>解析：</strong>
                       {result.explanation}
                     </p>
@@ -524,25 +589,10 @@ function QuizPage() {
                 </>
               ) : (
                 <>
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ color: '#374151', fontWeight: 600, marginBottom: 6 }}>你的回答</div>
-                    <div style={{ background: '#f9fafb', padding: '10px 12px', borderRadius: 8, whiteSpace: 'pre-wrap' }}>
-                      {result.studentAnswer}
-                    </div>
-                  </div>
-
                   {result.matchedPoints?.length > 0 && (
-                    <div
-                      style={{
-                        background: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: 10,
-                        padding: '10px 14px',
-                        marginBottom: 10,
-                      }}
-                    >
-                      <strong style={{ color: '#15803d' }}>符合知识点</strong>
-                      <ul style={{ margin: '6px 0 0', paddingLeft: 20, lineHeight: 1.7 }}>
+                    <div className={`${styles.feedbackBlock} ${styles.success}`}>
+                      <h3 className={styles.feedbackTitle}>符合知识点</h3>
+                      <ul>
                         {result.matchedPoints.map((item, index) => (
                           <li key={index}>{item}</li>
                         ))}
@@ -551,18 +601,9 @@ function QuizPage() {
                   )}
 
                   {result.beyondPoints?.length > 0 && (
-                    <div
-                      style={{
-                        background: '#eff6ff',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: 10,
-                        padding: '10px 14px',
-                        marginBottom: 10,
-                      }}
-                    >
-                      <strong style={{ color: '#1d4ed8' }}>正确但知识点未涵盖</strong>
-                      <span style={{ color: '#6b7280', fontSize: 13 }}>（属于关联拓展，不算错）</span>
-                      <ul style={{ margin: '6px 0 0', paddingLeft: 20, lineHeight: 1.7 }}>
+                    <div className={`${styles.feedbackBlock} ${styles.info}`}>
+                      <h3 className={styles.feedbackTitle}>正确拓展（不加分、不扣分）</h3>
+                      <ul>
                         {result.beyondPoints.map((item, index) => (
                           <li key={index}>{item}</li>
                         ))}
@@ -571,17 +612,9 @@ function QuizPage() {
                   )}
 
                   {result.issues?.length > 0 && (
-                    <div
-                      style={{
-                        background: '#fffbeb',
-                        border: '1px solid #fde68a',
-                        borderRadius: 10,
-                        padding: '10px 14px',
-                        marginBottom: 10,
-                      }}
-                    >
-                      <strong style={{ color: '#b45309' }}>需要修正或补充</strong>
-                      <ul style={{ margin: '6px 0 0', paddingLeft: 20, lineHeight: 1.7 }}>
+                    <div className={`${styles.feedbackBlock} ${styles.warning}`}>
+                      <h3 className={styles.feedbackTitle}>需要修正或补充</h3>
+                      <ul>
                         {result.issues.map((item, index) => (
                           <li key={index}>{item}</li>
                         ))}
@@ -590,7 +623,7 @@ function QuizPage() {
                   )}
 
                   {result.explanation && (
-                    <p style={{ color: '#4b5563', lineHeight: 1.7 }}>
+                    <p className={styles.explanation}>
                       <strong>阅卷意见：</strong>
                       {result.explanation}
                     </p>
@@ -598,28 +631,45 @@ function QuizPage() {
                 </>
               )}
 
-              {reviewMessage && <p style={{ color: '#f59e0b' }}>{reviewMessage}</p>}
-              {saveMessage && <p style={{ color: '#6b7280', fontSize: 14 }}>{saveMessage}</p>}
+              {reviewMessage && (
+                <span
+                  className={`${styles.syncNote} ${
+                    reviewFailed
+                      ? styles.warning
+                      : reviewMessage.startsWith('正在')
+                        ? styles.neutral
+                        : result.isCorrect
+                          ? styles.success
+                          : styles.warning
+                  }`}
+                >
+                  {reviewMessage}
+                </span>
+              )}
+              {saveMessage && <span className={styles.saveNote}>{saveMessage}</span>}
 
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
+              <div className={styles.resultActions}>
                 <button
                   type="button"
+                  className="btn btn-primary"
                   onClick={fetchQuestion}
                   disabled={busy}
-                  style={{ ...btnBase, border: 'none', background: '#8b5cf6', color: '#fff' }}
                 >
                   再来一题
                 </button>
-                <Link to={`/kp/${id}`}>
-                  <button type="button" style={btnBase}>查看知识点</button>
+                <Link to={`/kp/${id}`} className="btn btn-secondary">
+                  查看知识点
                 </Link>
-                <Link to="/">
-                  <button type="button" style={btnBase}>返回主页</button>
+                <Link to={`/quiz/${id}/history`} className="btn btn-ghost">
+                  测评记录
+                </Link>
+                <Link to="/" className="btn btn-ghost">
+                  返回主页
                 </Link>
               </div>
             </div>
           )}
-        </div>
+        </section>
       )}
     </div>
   );

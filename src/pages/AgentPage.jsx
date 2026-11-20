@@ -4,26 +4,51 @@ import apiClient from '../api/axios';
 import MarkdownContent from '../components/MarkdownContent';
 import './AgentPage.css';
 
-// 课时11：AI 助手 —— 基于私有知识库（RAG）的问答聊天界面
+const INITIAL_MESSAGE = {
+  sender: 'bot',
+  text: '你好！我是你的知识库 AI 助手。我会先在你的知识点里检索相关内容，再据此回答，不会凭空编造。可以问我笔记里的概念，也可以让我对比两个容易混淆的知识点。',
+};
+
 function AgentPage() {
-  const [messages, setMessages] = useState([
-    {
-      sender: 'bot',
-      text: '你好！我是你的专属知识库 AI 助手。我会先在你的知识点里检索相关内容，再据此回答，不会凭空编造。试试问我一个与你的知识点相关的问题吧！'
-    }
-  ]);
+  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [kpCount, setKpCount] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const chatWindowRef = useRef(null);
 
-  // 自动滚动到最新消息
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = chatWindowRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    const question = inputValue.trim();
+  useEffect(() => {
+    let cancelled = false;
+    const fetchKnowledgePoints = async () => {
+      try {
+        const res = await apiClient.get('/knowledge-points');
+        if (cancelled) return;
+        const list = Array.isArray(res.data) ? res.data : [];
+        setKpCount(list.length);
+        setSuggestions(
+          list.slice(0, 3).map((kp) => ({
+            id: kp._id,
+            text: `《${kp.title}》的核心概念是什么？`,
+          }))
+        );
+      } catch (err) {
+        console.error('获取知识点失败', err);
+      }
+    };
+    fetchKnowledgePoints();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sendMessage = async (text) => {
+    const question = text.trim();
     if (!question || isLoading) return;
 
     setMessages((prev) => [...prev, { sender: 'user', text: question }]);
@@ -34,76 +59,216 @@ function AgentPage() {
       const response = await apiClient.post('/ai/rag-qa', { question });
       setMessages((prev) => [
         ...prev,
-        { sender: 'bot', text: response.data.answer, sources: response.data.sources || [] }
+        {
+          sender: 'bot',
+          text: response.data.answer,
+          sources: response.data.sources || [],
+        },
       ]);
     } catch (error) {
-      // 优先展示后端返回的中文错误（凭证缺失、限流、欠费等），网络中断才用兜底文案
       const backendMsg = error.response?.data?.msg;
       setMessages((prev) => [
         ...prev,
-        { sender: 'bot', text: backendMsg || '抱歉，连接后端失败，请确认服务已启动后稍后再试。', isError: true }
+        {
+          sender: 'bot',
+          text: backendMsg || '抱歉，连接后端失败，请确认服务已启动后稍后再试。',
+          isError: true,
+        },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    sendMessage(inputValue);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(inputValue);
+    }
+  };
+
   return (
-    <div className="agent-page-wrapper">
-      <h1 className="agent-title">AI 助手</h1>
-      <p className="agent-subtitle">
-        基于你全部知识点的智能问答（RAG）：先检索、后回答，答不上来会直说，不编造。
-      </p>
-      <div className="agent-page">
-        <div className="chat-window">
-          {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.sender}`}>
-              <div className={`message-bubble${msg.isError ? ' error' : ''}`}>
-                {msg.sender === 'bot' && !msg.isError ? (
-                  <MarkdownContent>{msg.text}</MarkdownContent>
-                ) : (
-                  msg.text
-                )}
-                {msg.sources?.length > 0 && (
-                  <div className="message-sources">
-                    <span className="sources-label">引用来源：</span>
-                    {msg.sources.map((source) => (
-                      <Link
-                        key={source.knowledgePointId}
-                        to={`/kp/${source.knowledgePointId}`}
-                        className="source-chip"
-                        title={source.excerpt}
-                      >
-                        《{source.title}》
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="message bot">
-              <div className="message-bubble typing-indicator">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">RAG ASSISTANT</span>
+          <h1 className="page-title">AI 助手</h1>
+          <p className="page-subtitle">
+            基于你全部知识点的检索增强问答：先检索、后回答，答不上来会直说，不编造。
+          </p>
         </div>
-        <form className="chat-input-form" onSubmit={handleSendMessage}>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="在这里输入你的问题，例如：React Hooks 有什么好处？"
-            disabled={isLoading}
-            maxLength={500}
-          />
-          <button type="submit" disabled={isLoading || !inputValue.trim()}>
-            {isLoading ? '思考中...' : '发送'}
-          </button>
-        </form>
+        <span className="badge badge-brand">私有知识库 · RAG</span>
+      </div>
+
+      <div className="agentShell">
+        <aside className="aside">
+          <div className="infoCard">
+            <h2 className="infoTitle">🧭 它是怎么回答的</h2>
+            <ol className="steps">
+              <li className="step">
+                <span className="stepNum">1</span>
+                <span className="stepText">
+                  在你的知识点里<strong>检索最相关的片段</strong>。
+                </span>
+              </li>
+              <li className="step">
+                <span className="stepNum">2</span>
+                <span className="stepText">
+                  只根据检索到的内容<strong>组织回答</strong>。
+                </span>
+              </li>
+              <li className="step">
+                <span className="stepNum">3</span>
+                <span className="stepText">
+                  在答案下方给出<strong>引用来源</strong>，可点开核对。
+                </span>
+              </li>
+            </ol>
+            <div className="kbStats">
+              <span className="kbCount">{kpCount === null ? '—' : kpCount}</span>
+              <span className="kbLabel">个知识点可供检索</span>
+            </div>
+          </div>
+
+          <div className="suggestionPanel">
+            <h2 className="suggestionTitle">💡 试试这样问</h2>
+            {suggestions.length > 0 ? (
+              <div className="suggestionList">
+                {suggestions.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="suggestionBtn"
+                    onClick={() => sendMessage(item.text)}
+                    disabled={isLoading}
+                  >
+                    {item.text}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="suggestionEmpty">
+                还没有可推荐的问题。先
+                <Link to="/kp/new" style={{ color: 'var(--brand-700)', fontWeight: 700 }}>
+                  {' '}
+                  新建一个知识点{' '}
+                </Link>
+                ，再来问它。
+              </p>
+            )}
+          </div>
+        </aside>
+
+        <section className="chatPanel">
+          <header className="chatHeader">
+            <span className="botAvatar">AI</span>
+            <div className="chatTitle">
+              <strong>知识库助手</strong>
+              <span className="onlineLine">
+                <span className="onlineDot" />
+                在线 · 仅依据你的笔记回答
+              </span>
+            </div>
+            <div className="chatHeaderActions">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setMessages([INITIAL_MESSAGE])}
+                disabled={isLoading}
+              >
+                清空对话
+              </button>
+            </div>
+          </header>
+
+          <div className="chatWindow" ref={chatWindowRef}>
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`messageRow ${msg.sender === 'user' ? 'user' : ''}`}
+              >
+                <span
+                  className={`avatar ${msg.sender === 'user' ? 'user' : 'bot'}`}
+                  aria-hidden="true"
+                >
+                  {msg.sender === 'user' ? '我' : 'AI'}
+                </span>
+                <div
+                  className={`bubble ${msg.sender === 'user' ? 'user' : 'bot'} ${
+                    msg.isError ? 'error' : ''
+                  }`}
+                >
+                  {msg.sender === 'bot' && !msg.isError ? (
+                    <MarkdownContent>{msg.text}</MarkdownContent>
+                  ) : (
+                    msg.text
+                  )}
+                  {msg.sources?.length > 0 && (
+                    <div className="sources">
+                      <span>引用来源：</span>
+                      {msg.sources.map((source, sourceIndex) => (
+                        <Link
+                          key={source.knowledgePointId || sourceIndex}
+                          to={`/kp/${source.knowledgePointId}`}
+                          className="sourceChip"
+                          title={source.excerpt}
+                        >
+                          《{source.title}》
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="typingRow">
+                <span className="avatar bot" aria-hidden="true">
+                  AI
+                </span>
+                <div className="typingIndicator">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <span className="typingLabel">正在检索知识库…</span>
+              </div>
+            )}
+          </div>
+
+          <form className="composer" onSubmit={handleSendMessage}>
+            <div className="inputBox">
+              <textarea
+                className="composerInput"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="输入你的问题，例如：React Hooks 有什么好处？"
+                disabled={isLoading}
+                maxLength={500}
+                rows={1}
+                aria-label="向知识库提问"
+              />
+              <div className="inputMeta">
+                <span>Enter 发送 · Shift + Enter 换行</span>
+                <span>{inputValue.length} / 500</span>
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="sendBtn"
+              disabled={isLoading || !inputValue.trim()}
+            >
+              {isLoading ? '思考中…' : '发送 →'}
+            </button>
+          </form>
+        </section>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import apiClient from '../api/axios';
+import styles from './ThreeJSPage.module.css';
 
 // 课时13：3D 可视化入门与 Three.js
 // 两种模式：
@@ -15,6 +16,12 @@ const STATUS_COLORS = {
   not_started: 0x8b5cf6
 };
 
+const STATUS_HEX = {
+  mastered: '#22c55e',
+  need_review: '#f97316',
+  not_started: '#8b5cf6'
+};
+
 function statusColor(node) {
   if (node.reviewList) return STATUS_COLORS.need_review;
   return STATUS_COLORS[node.status] ?? STATUS_COLORS.not_started;
@@ -25,11 +32,15 @@ function ThreeJSPage() {
   const [mode, setMode] = useState('graph');
   const [graphData, setGraphData] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [hovered, setHovered] = useState(null); // 当前悬停的节点 { name, value }
   const navigate = useNavigate();
-  // 点击跳转用 ref 透传，避免把 navigate 放进 3D useEffect 依赖导致场景重建
+  // 点击跳转用 ref 透传，避免把 navigate 放进 3D useEffect 依赖导致场景重建；
+  // ref 写入放在 effect 里（渲染期间写 ref 违反 React 规范，lint 会告警）
   const navigateRef = useRef(navigate);
-  navigateRef.current = navigate;
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   // 获取图谱数据（graph 模式用）
   useEffect(() => {
@@ -41,6 +52,9 @@ function ThreeJSPage() {
       })
       .catch((err) => {
         if (!cancelled) setError(err.response?.data?.msg || '获取图谱数据失败，请确认后端已启动');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
@@ -228,69 +242,119 @@ function ThreeJSPage() {
     };
   }, [mode, graphData]);
 
+  const nodes = graphData?.nodes || [];
+  const counts = {
+    mastered: nodes.filter((node) => !node.reviewList && node.status === 'mastered').length,
+    need_review: nodes.filter((node) => node.reviewList || node.status === 'need_review').length,
+    not_started: nodes.filter(
+      (node) => !node.reviewList && node.status !== 'mastered' && node.status !== 'need_review'
+    ).length
+  };
+  const showGraph = mode === 'graph';
+
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+    <div className="page">
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#4c1d95', margin: '0 0 6px' }}>3D 视界</h1>
-          <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>
+          <span className="eyebrow">THREE.JS WORLD</span>
+          <h1 className="page-title">3D 视界</h1>
+          <p className="page-subtitle">
             {mode === 'cube'
-              ? 'Three.js 三要素演示：场景 + 相机 + 渲染器。左键拖拽旋转视角，滚轮缩放，右键平移。'
-              : '知识星球宇宙：每个知识点是一颗星球（颜色=学习状态），引用关系是星际航线。悬停高亮关联，点击星球查看详情。'}
+              ? 'Three.js 三要素演示：场景 + 相机 + 渲染器。左键拖拽旋转，滚轮缩放，右键平移。'
+              : '每个知识点是一颗星球（颜色=学习状态），引用关系是星际航线。悬停高亮关联，点击星球查看详情。'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[
-            ['graph', '知识宇宙'],
-            ['cube', '旋转立方体']
-          ].map(([value, label]) => (
+        <div className={styles.modeSwitch}>
+          <div className="segmented" role="group" aria-label="切换 3D 模式">
             <button
-              key={value}
-              onClick={() => setMode(value)}
-              style={{
-                padding: '8px 18px',
-                borderRadius: 8,
-                border: '1px solid #8b5cf6',
-                background: mode === value ? '#8b5cf6' : '#fff',
-                color: mode === value ? '#fff' : '#6d28d9',
-                cursor: 'pointer',
-                fontSize: 14
-              }}
+              type="button"
+              className={mode === 'graph' ? 'active' : ''}
+              onClick={() => setMode('graph')}
             >
-              {label}
+              知识宇宙
             </button>
-          ))}
+            <button
+              type="button"
+              className={mode === 'cube' ? 'active' : ''}
+              onClick={() => setMode('cube')}
+            >
+              旋转立方体
+            </button>
+          </div>
         </div>
       </div>
 
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {mode === 'graph' && graphData && graphData.nodes.length === 0 && (
-        <p style={{ color: '#6b7280' }}>还没有知识点，先去主页创建几个，再回来探索你的知识宇宙。</p>
+      {showGraph && (
+        <div className={styles.legendRow}>
+          <span className={styles.legendPill}>
+            <span className={styles.legendDot} style={{ background: STATUS_HEX.mastered }} />
+            已掌握 <span className={styles.legendCount}>{counts.mastered}</span>
+          </span>
+          <span className={styles.legendPill}>
+            <span className={styles.legendDot} style={{ background: STATUS_HEX.need_review }} />
+            需复习 <span className={styles.legendCount}>{counts.need_review}</span>
+          </span>
+          <span className={styles.legendPill}>
+            <span className={styles.legendDot} style={{ background: STATUS_HEX.not_started }} />
+            未开始 <span className={styles.legendCount}>{counts.not_started}</span>
+          </span>
+        </div>
       )}
 
-      <div style={{ position: 'relative', marginTop: 16, borderRadius: 12, overflow: 'hidden' }}>
-        <div ref={mountRef} style={{ width: '100%', height: '72vh', minHeight: 420 }} />
-        {hovered && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 12,
-              left: 12,
-              background: 'rgba(15, 23, 42, 0.85)',
-              color: '#fff',
-              padding: '10px 14px',
-              borderRadius: 8,
-              maxWidth: 320,
-              fontSize: 13,
-              pointerEvents: 'none'
-            }}
-          >
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>{hovered.name}</div>
-            <div style={{ color: '#cbd5e1' }}>{(hovered.value || '').slice(0, 80)}...</div>
-            <div style={{ color: '#94a3b8', marginTop: 4, fontSize: 12 }}>点击查看知识点详情</div>
+      {error && (
+        <div className="alert alert-error" style={{ marginBottom: 14 }} role="alert">
+          {error}
+        </div>
+      )}
+
+      {showGraph && loading ? (
+        <div className="card card-pad">
+          <div className="loading-block">
+            <span className="spinner" />
+            正在构建你的知识宇宙…
           </div>
-        )}
-      </div>
+        </div>
+      ) : showGraph && nodes.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">🌌</div>
+          <h3 className="empty-title">宇宙里还没有星球</h3>
+          <p className="empty-text">
+            先创建几个知识点，它们会变成星球；当正文提到另一个知识点的标题时，星球之间会出现航线。
+          </p>
+        </div>
+      ) : (
+        <div className={styles.stageCard}>
+          <div className={styles.stageHead}>
+            <div className={styles.stageTitle}>
+              <strong>{showGraph ? '知识宇宙' : 'Hello 3D World'}</strong>
+              <span>
+                {showGraph
+                  ? `${nodes.length} 颗星球 · 颜色表示掌握状态`
+                  : '场景 / 相机 / 渲染器 · 绿色立方体'}
+              </span>
+            </div>
+            <span className={styles.stageBadge}>
+              {showGraph ? '🪐 悬停高亮 · 点击进入' : '🖱 拖拽旋转 · 滚轮缩放'}
+            </span>
+          </div>
+          <div className={styles.canvasWrap}>
+            <div ref={mountRef} className={styles.canvas} />
+            {hovered && (
+              <div className={styles.hoverCard}>
+                <div className={styles.hoverName}>{hovered.name}</div>
+                {(hovered.value || '').trim() && (
+                  <div className={styles.hoverText}>
+                    {(hovered.value || '').slice(0, 80)}
+                    {(hovered.value || '').length > 80 ? '…' : ''}
+                  </div>
+                )}
+                <div className={styles.hoverHint}>点击查看知识点详情</div>
+              </div>
+            )}
+            <span className={styles.canvasHint}>左键拖拽旋转 · 滚轮缩放 · 右键平移</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
