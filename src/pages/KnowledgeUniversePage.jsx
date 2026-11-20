@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import {
   forceSimulation,
   forceManyBody,
@@ -9,6 +10,13 @@ import {
   forceLink
 } from 'd3-force-3d';
 import apiClient from '../api/axios';
+import {
+  createGlowTexture,
+  createGlowSprite,
+  createNodeLabel,
+  createStarfield,
+  buildArcPoints
+} from '../utils/threeScene';
 import styles from './KnowledgeUniversePage.module.css';
 
 // 课时14：Three.js 进阶——数据驱动的 3D 知识宇宙
@@ -102,8 +110,8 @@ function KnowledgeUniversePage() {
 
     // 场景 / 相机 / 渲染器：Three.js 三要素
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x070d1a);
-    scene.fog = new THREE.FogExp2(0x070d1a, 0.0045);
+    scene.background = new THREE.Color(0x03050d);
+    scene.fog = new THREE.FogExp2(0x03050d, 0.0042);
 
     const camera = new THREE.PerspectiveCamera(
       60,
@@ -111,65 +119,103 @@ function KnowledgeUniversePage() {
       0.1,
       2000
     );
-    camera.position.set(0, 26, 88);
+    camera.position.set(0, 16, 92);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.12;
+    renderer.domElement.style.cursor = 'grab';
     currentMount.appendChild(renderer.domElement);
+
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0';
+    labelRenderer.domElement.style.left = '0';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    labelRenderer.domElement.style.zIndex = '1';
+    currentMount.appendChild(labelRenderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.minDistance = 20;
     controls.maxDistance = 320;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.45;
+    let autoRotateTimer = 0;
+    const pauseAutoRotate = () => {
+      controls.autoRotate = false;
+      window.clearTimeout(autoRotateTimer);
+      autoRotateTimer = window.setTimeout(() => {
+        controls.autoRotate = true;
+      }, 3500);
+    };
+    controls.addEventListener('start', pauseAutoRotate);
 
-    // 光照：环境光保证暗部不死黑，点光源制造立体感
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-    const keyLight = new THREE.PointLight(0xffffff, 260, 0, 0);
-    keyLight.position.set(40, 60, 70);
-    scene.add(keyLight);
+    // 光照：冷暖两色点光 + 环境光，保证星球暗部不死黑
+    scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+    const violetLight = new THREE.PointLight(0x8b5cf6, 180, 0, 2);
+    violetLight.position.set(-55, 42, 62);
+    scene.add(violetLight);
+    const cyanLight = new THREE.PointLight(0x22d3ee, 120, 0, 2);
+    cyanLight.position.set(48, -36, 40);
+    scene.add(cyanLight);
 
-    // 背景星尘：纯装饰，不参与拾取
-    const starCount = 700;
-    const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i += 1) {
-      const radius = 120 + Math.random() * 220;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      starPositions[i * 3 + 1] = radius * Math.cos(phi);
-      starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
-    }
-    const starGeometry = new THREE.BufferGeometry();
-    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMaterial = new THREE.PointsMaterial({
-      color: 0x93a4c4,
-      size: 0.7,
-      sizeAttenuation: true,
-      transparent: true,
-      opacity: 0.7
+    const glowTexture = createGlowTexture();
+
+    // 背景星尘与两团星云柔光
+    const starfield = createStarfield({ count: 1100, minRadius: 90, maxRadius: 320, size: 0.95 });
+    scene.add(starfield);
+    const nebulaA = createGlowSprite(glowTexture, 0x7c3aed, 130, 0.12);
+    nebulaA.position.set(-45, 30, -90);
+    scene.add(nebulaA);
+    const nebulaB = createGlowSprite(glowTexture, 0x0ea5e9, 100, 0.08);
+    nebulaB.position.set(55, -35, -80);
+    scene.add(nebulaB);
+
+    // 中心微光与几圈若隐若现的星系轨道
+    const coreGlow = createGlowSprite(glowTexture, 0xc4b5fd, 38, 0.18);
+    scene.add(coreGlow);
+    const orbitRingObjects = [];
+    [46, 74, 108].forEach((radius, index) => {
+      const geometry = new THREE.TorusGeometry(radius, 0.06, 6, 220);
+      const material = new THREE.MeshBasicMaterial({
+        color: index === 1 ? 0x38bdf8 : 0x8b5cf6,
+        transparent: true,
+        opacity: 0.08,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const ring = new THREE.Mesh(geometry, material);
+      ring.rotation.x = Math.PI / 2 + index * 0.22;
+      ring.rotation.z = index * 0.35;
+      scene.add(ring);
+      orbitRingObjects.push({ ring, geometry, material });
     });
-    scene.add(new THREE.Points(starGeometry, starMaterial));
 
     // ---------- 节点：知识点 → 星球 ----------
     // 所有星球共用一个几何体，只按 symbolSize 缩放，省显存也省初始化时间
-    const nodeGeometry = new THREE.SphereGeometry(1, 24, 24);
+    const nodeGeometry = new THREE.SphereGeometry(1, 28, 28);
     const nodeMeshes = [];
     const meshById = new Map();
+    const visualById = new Map();
+    const showLabels = data.nodes.length <= 14;
 
     data.nodes.forEach((node) => {
       const baseColor = nodeColor(node);
       const material = new THREE.MeshStandardMaterial({
         color: baseColor,
         emissive: baseColor,
-        emissiveIntensity: 0.12,
-        roughness: 0.35,
-        metalness: 0.15
+        emissiveIntensity: 0.24,
+        roughness: 0.3,
+        metalness: 0.3
       });
       const mesh = new THREE.Mesh(nodeGeometry, material);
-      // 后端 symbolSize 为 20~50，映射成 1.6~3.0 的视觉半径
-      const baseScale = 1.6 + Math.min(Math.max(node.symbolSize - 20, 0), 30) / 30 * 1.4;
+      // 后端 symbolSize 为 20~50，映射成 2.0~3.6 的视觉半径
+      const baseScale = 2.0 + Math.min(Math.max(node.symbolSize - 20, 0), 30) / 30 * 1.6;
       mesh.scale.setScalar(baseScale);
       mesh.userData = {
         id: node.id,
@@ -183,6 +229,18 @@ function KnowledgeUniversePage() {
       scene.add(mesh);
       nodeMeshes.push(mesh);
       meshById.set(node.id, mesh);
+
+      // 光晕与标签独立放在场景里：不随节点选中缩放，光晕大小更稳定
+      const halo = createGlowSprite(glowTexture, baseColor, baseScale * 3.8, 0.55);
+      scene.add(halo);
+
+      let label = null;
+      if (showLabels) {
+        label = createNodeLabel(node.name, STATUS_HEX[node.status] || STATUS_HEX.not_started);
+        scene.add(label);
+      }
+
+      visualById.set(node.id, { halo, label, baseScale });
     });
 
     // ---------- 力导向模拟：节点互相排斥，引用边像引力绳 ----------
@@ -190,75 +248,83 @@ function KnowledgeUniversePage() {
     const simLinks = data.links.map((link) => ({ source: link.source, target: link.target }));
 
     const simulation = forceSimulation(simNodes, 3)
-      .force('charge', forceManyBody().strength(-70))
+      .force('charge', forceManyBody().strength(-46))
       .force('center', forceCenter(0, 0, 0))
-      .force('link', forceLink(simLinks).id((d) => d.id).distance(38).strength(0.4))
+      .force('link', forceLink(simLinks).id((d) => d.id).distance(30).strength(0.55))
       // 由我们自己的 requestAnimationFrame 驱动，不让 d3 另开定时器
       .stop();
 
-    // ---------- 引用边：一个 LineSegments 承载所有连线 ----------
-    const EDGE_BASE_COLOR = new THREE.Color(0x8899bb);
-    const EDGE_HIGHLIGHT_COLOR = new THREE.Color(0xffaa33);
+    // ---------- 引用边：每条航线是一段弯曲的发光弧线 ----------
+    const EDGE_BASE_COLOR = new THREE.Color(0x6f8cff);
+    const EDGE_HIGHLIGHT_COLOR = new THREE.Color(0xffb347);
     const EDGE_DIM_COLOR = new THREE.Color(0x24324a);
+    const EDGE_SEGMENTS = 18;
+    const edgeObjects = [];
 
-    const edgePositions = new Float32Array(simLinks.length * 6);
-    const edgeColors = new Float32Array(simLinks.length * 6);
-    for (let i = 0; i < simLinks.length * 2; i += 1) {
-      EDGE_BASE_COLOR.toArray(edgeColors, i * 3);
-    }
-
-    const edgeGeometry = new THREE.BufferGeometry();
-    edgeGeometry.setAttribute('position', new THREE.BufferAttribute(edgePositions, 3));
-    edgeGeometry.setAttribute('color', new THREE.BufferAttribute(edgeColors, 3));
-
-    const edgeMaterial = new THREE.LineBasicMaterial({
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.55
+    simLinks.forEach((link) => {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(EDGE_SEGMENTS * 3);
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const material = new THREE.LineBasicMaterial({
+        color: EDGE_BASE_COLOR,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const line = new THREE.Line(geometry, material);
+      line.renderOrder = 1;
+      scene.add(line);
+      edgeObjects.push({ link, line, geometry, material });
     });
-    const edgeLines = simLinks.length
-      ? new THREE.LineSegments(edgeGeometry, edgeMaterial)
-      : null;
-    if (edgeLines) scene.add(edgeLines);
 
-    // 把模拟坐标写回 Three.js 对象
+    // 把模拟坐标写回 Three.js 对象（节点、光晕、标签、弧线）
     const applyPositions = () => {
       simNodes.forEach((node) => {
+        // 星系半径限制在 38 以内，避免极端斥力把个别星球甩出视野
+        const radius = Math.hypot(node.x || 0, node.y || 0, node.z || 0);
+        if (radius > 38) {
+          const scale = 38 / radius;
+          node.x *= scale;
+          node.y *= scale;
+          node.z *= scale;
+        }
         const mesh = meshById.get(node.id);
         if (mesh) mesh.position.set(node.x, node.y, node.z);
+        const visual = visualById.get(node.id);
+        if (visual) {
+          const lift = visual.baseScale * 1.6 + 1.1;
+          visual.halo.position.set(node.x, node.y, node.z);
+          if (visual.label) visual.label.position.set(node.x, node.y + lift, node.z);
+        }
       });
-      if (!edgeLines) return;
-      simLinks.forEach((link, i) => {
+
+      edgeObjects.forEach(({ link, geometry }) => {
         const source = link.source;
         const target = link.target;
         if (typeof source !== 'object' || typeof target !== 'object') return;
-        const offset = i * 6;
-        edgePositions[offset] = source.x;
-        edgePositions[offset + 1] = source.y;
-        edgePositions[offset + 2] = source.z;
-        edgePositions[offset + 3] = target.x;
-        edgePositions[offset + 4] = target.y;
-        edgePositions[offset + 5] = target.z;
+        const start = new THREE.Vector3(source.x, source.y, source.z);
+        const end = new THREE.Vector3(target.x, target.y, target.z);
+        const points = buildArcPoints(start, end, EDGE_SEGMENTS - 1, 0.16);
+        const position = geometry.attributes.position;
+        points.forEach((point, index) => {
+          position.setXYZ(index, point.x, point.y, point.z);
+        });
+        position.needsUpdate = true;
       });
-      edgeGeometry.attributes.position.needsUpdate = true;
     };
 
     // 选中时高亮相连航线，其余压暗；取消选中恢复统一色
     const paintEdges = (selectedId) => {
-      if (!edgeLines) return;
-      simLinks.forEach((link, i) => {
+      edgeObjects.forEach(({ link, material }) => {
         const connected =
           selectedId &&
           (link.source.id === selectedId || link.target.id === selectedId);
-        const color = connected
-          ? EDGE_HIGHLIGHT_COLOR
-          : selectedId
-            ? EDGE_DIM_COLOR
-            : EDGE_BASE_COLOR;
-        color.toArray(edgeColors, i * 6);
-        color.toArray(edgeColors, i * 6 + 3);
+        material.color.copy(
+          connected ? EDGE_HIGHLIGHT_COLOR : selectedId ? EDGE_DIM_COLOR : EDGE_BASE_COLOR
+        );
+        material.opacity = connected ? 0.98 : selectedId ? 0.12 : 0.4;
       });
-      edgeGeometry.attributes.color.needsUpdate = true;
     };
 
     applyPositions();
@@ -271,7 +337,12 @@ function KnowledgeUniversePage() {
     let pressedAt = null;
 
     const setNodeGlow = (mesh, intensity) => {
-      if (mesh) mesh.material.emissiveIntensity = intensity;
+      if (!mesh) return;
+      mesh.material.emissiveIntensity = intensity;
+      const visual = visualById.get(mesh.userData.id);
+      if (visual?.halo) {
+        visual.halo.material.opacity = intensity >= 0.4 ? 0.95 : 0.55;
+      }
     };
 
     const pickNode = (event) => {
@@ -287,7 +358,9 @@ function KnowledgeUniversePage() {
       const mesh = meshById.get(selectedId);
       if (mesh) {
         mesh.scale.setScalar(mesh.userData.baseScale);
-        setNodeGlow(mesh, hoveredMesh === mesh ? 0.35 : 0.12);
+        setNodeGlow(mesh, hoveredMesh === mesh ? 0.35 : 0.24);
+        const visual = visualById.get(mesh.userData.id);
+        if (visual?.label) visual.label.element.style.opacity = '0.9';
       }
       selectedId = null;
       paintEdges(null);
@@ -299,6 +372,8 @@ function KnowledgeUniversePage() {
       selectedId = mesh.userData.id;
       mesh.scale.setScalar(mesh.userData.baseScale * 1.18);
       setNodeGlow(mesh, 0.55);
+      const visual = visualById.get(mesh.userData.id);
+      if (visual?.label) visual.label.element.style.opacity = '1';
       paintEdges(selectedId);
       hideTooltip();
       setSelected({
@@ -332,7 +407,7 @@ function KnowledgeUniversePage() {
       const hit = pickNode(event);
       if (hit !== hoveredMesh) {
         if (hoveredMesh && hoveredMesh.userData.id !== selectedId) {
-          setNodeGlow(hoveredMesh, 0.12);
+          setNodeGlow(hoveredMesh, 0.24);
         }
         hoveredMesh = hit;
         if (hit && hit.userData.id !== selectedId) setNodeGlow(hit, 0.35);
@@ -366,7 +441,7 @@ function KnowledgeUniversePage() {
 
     const onPointerLeave = () => {
       if (hoveredMesh && hoveredMesh.userData.id !== selectedId) {
-        setNodeGlow(hoveredMesh, 0.12);
+        setNodeGlow(hoveredMesh, 0.24);
       }
       hoveredMesh = null;
       hideTooltip();
@@ -380,14 +455,22 @@ function KnowledgeUniversePage() {
 
     // ---------- 动画循环：模拟未收敛时推进，收敛后只渲染 ----------
     let frameId = 0;
+    let elapsed = 0;
     const animate = () => {
       frameId = requestAnimationFrame(animate);
+      elapsed += 0.016;
       if (simulation.alpha() > simulation.alphaMin()) {
         simulation.tick();
         applyPositions();
       }
+      starfield.material.opacity = 0.82 * (0.86 + Math.sin(elapsed * 0.65) * 0.14);
+      coreGlow.material.opacity = 0.16 + Math.sin(elapsed * 0.9) * 0.045;
+      orbitRingObjects.forEach(({ ring }, index) => {
+        ring.rotation.z += 0.0006 * (index + 1);
+      });
       controls.update();
       renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
     };
     animate();
 
@@ -395,13 +478,16 @@ function KnowledgeUniversePage() {
       camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+      labelRenderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
     };
     window.addEventListener('resize', handleResize);
 
     // ---------- 清理：停循环、停模拟、移监听、释放 GPU 资源 ----------
     return () => {
       cancelAnimationFrame(frameId);
+      window.clearTimeout(autoRotateTimer);
       simulation.stop();
+      controls.removeEventListener('start', pauseAutoRotate);
       clearSelectionRef.current = null;
       window.removeEventListener('resize', handleResize);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
@@ -410,12 +496,31 @@ function KnowledgeUniversePage() {
       renderer.domElement.removeEventListener('pointerleave', onPointerLeave);
       controls.dispose();
       nodeGeometry.dispose();
-      data.nodes.forEach((node) => meshById.get(node.id)?.material.dispose());
-      starGeometry.dispose();
-      starMaterial.dispose();
-      edgeGeometry.dispose();
-      edgeMaterial.dispose();
+      data.nodes.forEach((node) => {
+        const mesh = meshById.get(node.id);
+        mesh?.material.dispose();
+        const visual = visualById.get(node.id);
+        visual?.halo.material.dispose();
+        visual?.label?.element?.remove();
+      });
+      edgeObjects.forEach(({ geometry, material }) => {
+        geometry.dispose();
+        material.dispose();
+      });
+      orbitRingObjects.forEach(({ geometry, material }) => {
+        geometry.dispose();
+        material.dispose();
+      });
+      starfield.geometry.dispose();
+      starfield.material.dispose();
+      nebulaA.material.dispose();
+      nebulaB.material.dispose();
+      coreGlow.material.dispose();
+      glowTexture.dispose();
       renderer.dispose();
+      if (labelRenderer.domElement.parentNode === currentMount) {
+        currentMount.removeChild(labelRenderer.domElement);
+      }
       if (renderer.domElement.parentNode === currentMount) {
         currentMount.removeChild(renderer.domElement);
       }
@@ -423,6 +528,14 @@ function KnowledgeUniversePage() {
   }, [data]);
 
   const hasNodes = data && data.nodes.length > 0;
+  const counts = {
+    mastered: data?.nodes.filter((node) => !node.reviewList && node.status === 'mastered').length || 0,
+    need_review: data?.nodes.filter((node) => node.reviewList || node.status === 'need_review').length || 0,
+    not_started:
+      data?.nodes.filter(
+        (node) => !node.reviewList && node.status !== 'mastered' && node.status !== 'need_review'
+      ).length || 0
+  };
 
   return (
     <div className="page">
@@ -471,9 +584,13 @@ function KnowledgeUniversePage() {
           <div className={styles.stageHead}>
             <div className={styles.stageTitle}>
               <strong>知识星系</strong>
-              <span>d3-force-3d 力导向布局 · 节点会随引用关系自动靠拢</span>
+              <span>d3-force-3d 力导向布局 · 光晕与弧线随知识关系生长</span>
             </div>
-            <span className={styles.stageBadge}>🪐 点击星球查看摘要</span>
+            <div className={styles.stageStats}>
+              <span className={styles.stageBadge}>🪐 点击星球查看摘要</span>
+              <span className={styles.stageBadge}>✦ {data.nodes.length} 星球</span>
+              <span className={styles.stageBadge}>↗ {data.links.length} 航线</span>
+            </div>
           </div>
           <div className={styles.canvasWrap}>
             <div ref={mountRef} className={styles.canvas} />
@@ -492,7 +609,7 @@ function KnowledgeUniversePage() {
                     className={styles.legendDot}
                     style={{ background: STATUS_HEX[key] }}
                   />
-                  {label}
+                  {label} <span className={styles.legendCount}>{counts[key]}</span>
                 </div>
               ))}
               <div className={styles.legendMeta}>

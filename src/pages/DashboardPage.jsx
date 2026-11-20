@@ -77,7 +77,25 @@ function DashboardPage() {
       ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
       : null;
     const maxScore = scores.length ? Math.max(...scores) : null;
-    return { total, needReview, mastered, notStarted, avgScore, maxScore };
+    const masteryPct = total ? Math.round((mastered / total) * 100) : 0;
+    return {
+      total,
+      needReview,
+      mastered,
+      notStarted,
+      avgScore,
+      maxScore,
+      scoreCount: scores.length,
+      masteryPct
+    };
+  }, [knowledgePoints]);
+
+  const focusPoint = useMemo(() => {
+    return (
+      knowledgePoints
+        .filter((kp) => kp.reviewList || kp.status === 'need_review')
+        .sort((a, b) => (a.lastAttempt?.score ?? 101) - (b.lastAttempt?.score ?? 101))[0] || null
+    );
   }, [knowledgePoints]);
 
   const filteredPoints = useMemo(() => {
@@ -165,34 +183,125 @@ function DashboardPage() {
           </div>
         </div>
         <div className={styles.heroMetrics}>
-          <div className={styles.heroMetric}>
-            <span className={styles.heroMetricValue}>{stats.total}</span>
-            <span className={styles.heroMetricLabel}>知识点总数</span>
+          <div className={styles.heroMetricRow}>
+            <div className={styles.heroMetric}>
+              <span className={styles.heroMetricValue}>{stats.total}</span>
+              <span className={styles.heroMetricLabel}>知识点总数</span>
+            </div>
+            <div className={styles.heroMetricDivider} />
+            <div className={styles.heroMetric}>
+              <span className={styles.heroMetricValue}>{stats.mastered}</span>
+              <span className={styles.heroMetricLabel}>已掌握</span>
+            </div>
+            <div className={styles.heroMetricDivider} />
+            <div className={styles.heroMetric}>
+              <span className={styles.heroMetricValue}>
+                {stats.masteryPct}
+                <span className={styles.heroMetricUnit}>%</span>
+              </span>
+              <span className={styles.heroMetricLabel}>整体掌握率</span>
+            </div>
           </div>
-          <div className={styles.heroMetricDivider} />
-          <div className={styles.heroMetric}>
-            <span className={styles.heroMetricValue}>{stats.mastered}</span>
-            <span className={styles.heroMetricLabel}>已掌握</span>
+          <div className={styles.heroProgress}>
+            <div className={styles.heroProgressTrack}>
+              <span
+                className={styles.heroProgressFill}
+                style={{ width: `${stats.masteryPct}%` }}
+              />
+            </div>
+            <span className={styles.heroProgressLabel}>
+              已掌握 {stats.mastered} / {stats.total} 个知识点
+            </span>
           </div>
         </div>
       </section>
 
+      {focusPoint && (
+        <section className={styles.focusBar}>
+          <span className={styles.focusIcon} aria-hidden="true">
+            ↻
+          </span>
+          <div className={styles.focusCopy}>
+            <span className={styles.focusEyebrow}>NEXT REVIEW</span>
+            <strong className={styles.focusTitle}>下一步：先复习「{focusPoint.title}」</strong>
+            <p className={styles.focusText}>
+              {typeof focusPoint.lastAttempt?.score === 'number'
+                ? `上次复述 ${focusPoint.lastAttempt.score} 分，建议再讲一遍，把没讲清的概念补上。`
+                : '这个知识点还没有复述记录，先用自己的话讲一遍，让 AI 教练给出反馈。'}
+            </p>
+          </div>
+          <Link to={`/feynman/${focusPoint._id}`} className={styles.focusAction}>
+            去复述 →
+          </Link>
+        </section>
+      )}
+
       <div className="stat-grid" style={{ marginBottom: 20 }}>
         <div className="stat-card">
-          <p className="stat-label">待复习</p>
+          <div className={styles.statHead}>
+            <span className={`${styles.statIcon} ${styles.statIconReview}`} aria-hidden="true">
+              ↻
+            </span>
+            <p className="stat-label">待复习</p>
+          </div>
           <p className="stat-value danger">{stats.needReview}</p>
+          <div className={styles.statMeter}>
+            <span
+              className={`${styles.statMeterFill} ${styles.meterWarm}`}
+              style={{ width: `${stats.total ? (stats.needReview / stats.total) * 100 : 0}%` }}
+            />
+          </div>
+          <p className={styles.statHint}>占全部知识点的 {stats.total ? Math.round((stats.needReview / stats.total) * 100) : 0}%</p>
         </div>
         <div className="stat-card">
-          <p className="stat-label">未开始</p>
+          <div className={styles.statHead}>
+            <span className={`${styles.statIcon} ${styles.statIconIdle}`} aria-hidden="true">
+              ○
+            </span>
+            <p className="stat-label">未开始</p>
+          </div>
           <p className="stat-value">{stats.notStarted}</p>
+          <div className={styles.statMeter}>
+            <span
+              className={`${styles.statMeterFill} ${styles.meterCool}`}
+              style={{ width: `${stats.total ? (stats.notStarted / stats.total) * 100 : 0}%` }}
+            />
+          </div>
+          <p className={styles.statHint}>还有 {stats.notStarted} 个知识点等待第一次复述</p>
         </div>
         <div className="stat-card">
-          <p className="stat-label">平均复述得分</p>
+          <div className={styles.statHead}>
+            <span className={`${styles.statIcon} ${styles.statIconScore}`} aria-hidden="true">
+              ◎
+            </span>
+            <p className="stat-label">平均复述得分</p>
+          </div>
           <p className="stat-value">{stats.avgScore === null ? '—' : stats.avgScore}</p>
+          <div className={styles.statMeter}>
+            <span
+              className={`${styles.statMeterFill} ${styles.meterBrand}`}
+              style={{ width: `${stats.avgScore ?? 0}%` }}
+            />
+          </div>
+          <p className={styles.statHint}>基于 {stats.scoreCount} 次已保存的复述评价</p>
         </div>
         <div className="stat-card">
-          <p className="stat-label">最高得分</p>
+          <div className={styles.statHead}>
+            <span className={`${styles.statIcon} ${styles.statIconTop}`} aria-hidden="true">
+              ★
+            </span>
+            <p className="stat-label">最高得分</p>
+          </div>
           <p className="stat-value success">{stats.maxScore === null ? '—' : stats.maxScore}</p>
+          <div className={styles.statMeter}>
+            <span
+              className={`${styles.statMeterFill} ${styles.meterGreen}`}
+              style={{ width: `${stats.maxScore ?? 0}%` }}
+            />
+          </div>
+          <p className={styles.statHint}>
+            {stats.maxScore === null ? '完成一次复述后生成得分' : '距离满分还差 ' + (100 - stats.maxScore) + ' 分'}
+          </p>
         </div>
       </div>
 

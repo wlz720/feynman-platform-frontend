@@ -74,12 +74,58 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--text);
+  /* 普通正文用箭头光标，避免悬停在标题、标签上时出现文本 I 形光标 */
+  cursor: default;
   background:
     radial-gradient(1100px 620px at 8% -8%, rgba(196, 181, 253, 0.34), transparent 62%),
     radial-gradient(900px 540px at 96% 2%, rgba(147, 197, 253, 0.22), transparent 60%),
     var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* 可点击元素统一手型；输入区域才显示文本光标 */
+a,
+button,
+[role="button"],
+label,
+summary,
+.nav-link,
+.clickable {
+  cursor: pointer;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+}
+
+select {
+  cursor: pointer;
+}
+
+button:disabled,
+.btn:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* 3D 场景中的 CSS2D 标签：固定屏幕字号，不随相机远近变形 */
+.three-label {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.75);
+  background: rgba(5, 10, 24, 0.82);
+  color: #f8fafc;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.42);
+  backdrop-filter: blur(6px);
 }
 
 /* 只禁止按钮/导航的文本选中，正文允许复制，方便用户取用笔记 */

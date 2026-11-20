@@ -2,7 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import apiClient from '../api/axios';
+import {
+  createGlowTexture,
+  createGlowSprite,
+  createNodeLabel,
+  createStarfield,
+  buildArcPoints
+} from '../utils/threeScene';
 import styles from './ThreeJSPage.module.css';
 
 // 课时13：3D 可视化入门与 Three.js
@@ -68,82 +76,231 @@ function ThreeJSPage() {
 
     // ---------- 三要素：场景 / 相机 / 渲染器 ----------
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a2a3a);
+    scene.background = new THREE.Color(0x050814);
+    scene.fog = new THREE.FogExp2(0x050814, 0.025);
 
     const camera = new THREE.PerspectiveCamera(
-      75,
+      60,
       currentMount.clientWidth / currentMount.clientHeight,
       0.1,
       1000
     );
-    camera.position.set(0, 2, 12);
+    camera.position.set(0, 5, mode === 'cube' ? 7 : 22);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.domElement.style.cursor = 'grab';
     currentMount.appendChild(renderer.domElement);
+
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0';
+    labelRenderer.domElement.style.left = '0';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    labelRenderer.domElement.style.zIndex = '1';
+    currentMount.appendChild(labelRenderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; // 阻尼让旋转更平滑
+    controls.dampingFactor = 0.07;
+    controls.minDistance = mode === 'cube' ? 3.2 : 8;
+    controls.maxDistance = 70;
 
-    // ---------- 光照：MeshStandardMaterial 必须有光才可见 ----------
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const pointLight = new THREE.PointLight(0xffffff, 120);
-    pointLight.position.set(10, 10, 10);
-    scene.add(pointLight);
+    const world = new THREE.Group();
+    scene.add(world);
 
+    // ---------- 光照：冷暖双色点光 + 环境光，让星球有体积感 ----------
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const violetLight = new THREE.PointLight(0x8b5cf6, 90, 0, 2);
+    violetLight.position.set(-12, 8, 10);
+    scene.add(violetLight);
+    const cyanLight = new THREE.PointLight(0x22d3ee, 65, 0, 2);
+    cyanLight.position.set(13, -7, 9);
+    scene.add(cyanLight);
+
+    const glowTexture = createGlowTexture();
     const disposables = []; // 统一记录几何体/材质，卸载时释放显存
+    const starfield = createStarfield({ count: 1000, minRadius: 55, maxRadius: 260 });
+    scene.add(starfield);
+    disposables.push(starfield.geometry, starfield.material);
+
+    // 星云光晕：两团巨大的柔光，作为深空底色
+    const nebulaA = createGlowSprite(glowTexture, 0x7c3aed, 85, 0.11);
+    nebulaA.position.set(-25, 14, -38);
+    scene.add(nebulaA);
+    const nebulaB = createGlowSprite(glowTexture, 0x0ea5e9, 64, 0.09);
+    nebulaB.position.set(28, -16, -30);
+    scene.add(nebulaB);
+    disposables.push(nebulaA.material, nebulaB.material);
+
     let cube = null;
     const nodeMeshes = [];
     const lineObjects = []; // { line, sourceId, targetId }
     const meshById = new Map();
 
     if (mode === 'cube') {
-      // Hello 3D World：绿色旋转立方体
-      const geometry = new THREE.BoxGeometry(2, 2, 2);
-      const material = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4 });
+      // Hello 3D World：发光旋转立方体 + 霓虹边线 + 光环
+      const geometry = new THREE.BoxGeometry(2.2, 2.2, 2.2, 2, 2, 2);
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0x071b12,
+        emissive: 0x22c55e,
+        emissiveIntensity: 0.22,
+        roughness: 0.12,
+        metalness: 0.75,
+        clearcoat: 1,
+        clearcoatRoughness: 0.08,
+        transparent: true,
+        opacity: 0.92
+      });
       cube = new THREE.Mesh(geometry, material);
-      scene.add(cube);
+      world.add(cube);
       disposables.push(geometry, material);
-      camera.position.set(0, 0, 5);
+
+      const edges = new THREE.EdgesGeometry(geometry);
+      const edgeMaterial = new THREE.LineBasicMaterial({
+        color: 0x86efac,
+        transparent: true,
+        opacity: 0.95
+      });
+      cube.add(new THREE.LineSegments(edges, edgeMaterial));
+      disposables.push(edges, edgeMaterial);
+
+      const ringMaterial = new THREE.MeshBasicMaterial({
+        color: 0x8b5cf6,
+        transparent: true,
+        opacity: 0.45,
+        blending: THREE.AdditiveBlending
+      });
+      const ringGeometry = new THREE.TorusGeometry(2.8, 0.035, 8, 120);
+      const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+      ring.rotation.x = Math.PI / 2.15;
+      ring.rotation.y = 0.35;
+      world.add(ring);
+      disposables.push(ringGeometry, ringMaterial);
+
+      const glow = createGlowSprite(glowTexture, 0x22c55e, 13, 0.24);
+      glow.material.depthTest = true;
+      glow.position.set(0, 0, -1.6);
+      glow.renderOrder = 0;
+      world.add(glow);
+      disposables.push(glow.material);
+      camera.position.set(0, 1.2, 7.2);
     } else {
       // ---------- 数据驱动：知识点 → 星球，引用关系 → 星际航线 ----------
-      const sphereGeometry = new THREE.SphereGeometry(0.35, 32, 32);
-      disposables.push(sphereGeometry);
-      graphData.nodes.forEach((node) => {
+      // 用 Fibonacci 球面均匀撒点，让知识网络从任意角度都有层次，
+      // 比纯随机坐标更稳定，也避免所有星球挤在视野中央。
+      const nodeGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+      disposables.push(nodeGeometry);
+      const total = graphData.nodes.length;
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      const showLabels = total <= 14;
+
+      graphData.nodes.forEach((node, index) => {
+        const color = statusColor(node);
         const material = new THREE.MeshStandardMaterial({
-          color: statusColor(node),
-          roughness: 0.35,
-          metalness: 0.1
+          color,
+          emissive: color,
+          emissiveIntensity: 0.5,
+          roughness: 0.28,
+          metalness: 0.35
         });
-        const sphere = new THREE.Mesh(sphereGeometry, material);
-        sphere.position.set(
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10
-        );
-        // 节点大小随 symbolSize 缩放（后端按正文长度给出 20~50）
-        const scale = 0.7 + (node.symbolSize || 20) / 50;
-        sphere.scale.setScalar(scale);
-        sphere.userData = { id: node.id, name: node.name, value: node.value, baseColor: material.color.getHex() };
-        scene.add(sphere);
+        const sphere = new THREE.Mesh(nodeGeometry, material);
+        const baseScale = 0.85 + (Math.min(node.symbolSize || 20, 50) / 50) * 0.75;
+        sphere.scale.setScalar(baseScale);
+
+        const group = new THREE.Group();
+        if (total === 1) {
+          group.position.set(0, 0, 0);
+        } else {
+          const y = 0.82 - (index / (total - 1)) * 1.64;
+          const ringRadius = Math.sqrt(Math.max(0, 1 - y * y));
+          const theta = goldenAngle * index;
+          group.position.set(
+            Math.cos(theta) * ringRadius * 8.4,
+            y * 6.4,
+            Math.sin(theta) * ringRadius * 8.4
+          );
+        }
+        group.add(sphere);
+        sphere.userData = {
+          id: node.id,
+          name: node.name,
+          value: node.value,
+          baseColor: color,
+          baseScale,
+          group,
+          halo: null,
+          label: null
+        };
+
+        const halo = createGlowSprite(glowTexture, color, baseScale * 4.4, 0.55);
+        halo.position.set(0, 0, 0);
+        group.add(halo);
+        sphere.userData.halo = halo;
+        disposables.push(halo.material);
+
+        // 每条知识轨道环：给星球一点“行星”气质
+        const ringGeometry = new THREE.TorusGeometry(baseScale * 1.35, 0.018, 6, 96);
+        const ringMaterial = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.32,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.rotation.x = Math.PI / 2 + (index % 3) * 0.18;
+        ring.rotation.z = index * 0.5;
+        group.add(ring);
+        disposables.push(ringGeometry, ringMaterial);
+
+        if (showLabels) {
+          const label = createNodeLabel(node.name, STATUS_HEX[node.status] || STATUS_HEX.not_started);
+          label.position.set(0, baseScale * 1.25 + 1.25, 0);
+          group.add(label);
+          sphere.userData.label = label;
+        }
+
+        world.add(group);
         nodeMeshes.push(sphere);
-        meshById.set(node.id, sphere);
+        meshById.set(node.id, group);
         disposables.push(material);
       });
 
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0x8899bb, transparent: true, opacity: 0.45 });
-      disposables.push(lineMaterial);
       graphData.links.forEach((link) => {
         const source = meshById.get(link.source);
         const target = meshById.get(link.target);
         if (!source || !target) return;
-        const geometry = new THREE.BufferGeometry().setFromPoints([source.position, target.position]);
-        const line = new THREE.Line(geometry, lineMaterial.clone());
-        scene.add(line);
+        const points = buildArcPoints(source.position, target.position, 26, 0.2);
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({
+          color: 0x7c9cff,
+          transparent: true,
+          opacity: 0.34,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+        const line = new THREE.Line(geometry, material);
+        line.renderOrder = 1;
+        world.add(line);
         lineObjects.push({ line, sourceId: link.source, targetId: link.target });
-        disposables.push(geometry, line.material);
+        disposables.push(geometry, material);
       });
+
+      // 星系中心的一颗小核心，给整个场景一个视觉锚点
+      const coreMaterial = new THREE.MeshBasicMaterial({
+        color: 0xc4b5fd,
+        transparent: true,
+        opacity: 0.9
+      });
+      const coreGeometry = new THREE.SphereGeometry(0.16, 16, 16);
+      const core = new THREE.Mesh(coreGeometry, coreMaterial);
+      world.add(core);
+      disposables.push(coreGeometry, coreMaterial);
     }
 
     // ---------- Raycaster 鼠标拾取（课后挑战：悬停高亮星球与航线） ----------
@@ -154,12 +311,25 @@ function ThreeJSPage() {
 
     const setHighlight = (mesh, on) => {
       if (!mesh) return;
-      mesh.material.emissive.setHex(on ? 0x552200 : 0x000000); // 悬停发光，移开恢复
+      mesh.material.emissiveIntensity = on ? 1.85 : 0.5; // 悬停发光，移开恢复
+      const group = mesh.userData.group;
+      if (group) group.scale.setScalar(on ? 1.12 : 1);
+      if (mesh.userData.halo) {
+        mesh.userData.halo.material.opacity = on ? 1 : 0.55;
+      }
+      if (mesh.userData.label) {
+        mesh.userData.label.element.style.opacity = on ? '1' : '0.9';
+      }
       const id = mesh.userData.id;
       lineObjects.forEach(({ line, sourceId, targetId }) => {
         const connected = sourceId === id || targetId === id;
-        line.material.color.setHex(on && connected ? 0xffaa33 : 0x8899bb);
-        line.material.opacity = on ? (connected ? 0.95 : 0.15) : 0.45;
+        if (on && connected) {
+          line.material.color.setHex(0xffb347);
+          line.material.opacity = 0.98;
+        } else {
+          line.material.color.setHex(0x7c9cff);
+          line.material.opacity = on ? 0.1 : 0.34;
+        }
       });
     };
 
@@ -207,14 +377,25 @@ function ThreeJSPage() {
 
     // ---------- 动画循环 ----------
     let frameId = 0;
+    let elapsed = 0;
     const animate = () => {
       frameId = requestAnimationFrame(animate);
+      elapsed += 0.016;
       if (cube) {
-        cube.rotation.x += 0.01;
-        cube.rotation.y += 0.01;
+        cube.rotation.x += 0.008;
+        cube.rotation.y += 0.012;
+        cube.rotation.z += 0.004;
+      } else {
+        // 缓慢自转，像一座活的星系；拖拽时 OrbitControls 仍可接管
+        world.rotation.y += 0.0009;
+      }
+      if (starfield.material) {
+        starfield.material.opacity =
+          starfield.userData.baseOpacity * (0.86 + Math.sin(elapsed * 0.7) * 0.14);
       }
       controls.update();
       renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
     };
     animate();
 
@@ -222,6 +403,7 @@ function ThreeJSPage() {
       camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+      labelRenderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
     };
     window.addEventListener('resize', handleResize);
 
@@ -234,7 +416,11 @@ function ThreeJSPage() {
       renderer.domElement.removeEventListener('mouseup', onMouseUp);
       controls.dispose();
       disposables.forEach((item) => item.dispose());
+      glowTexture.dispose();
       renderer.dispose();
+      if (labelRenderer.domElement.parentNode === currentMount) {
+        currentMount.removeChild(labelRenderer.domElement);
+      }
       if (renderer.domElement.parentNode === currentMount) {
         currentMount.removeChild(renderer.domElement);
       }
@@ -329,8 +515,8 @@ function ThreeJSPage() {
               <strong>{showGraph ? '知识宇宙' : 'Hello 3D World'}</strong>
               <span>
                 {showGraph
-                  ? `${nodes.length} 颗星球 · 颜色表示掌握状态`
-                  : '场景 / 相机 / 渲染器 · 绿色立方体'}
+                  ? `${nodes.length} 颗星球 · ${graphData?.links?.length || 0} 条航线 · 颜色表示掌握状态`
+                  : '场景 / 相机 / 渲染器 · 霓虹立方体'}
               </span>
             </div>
             <span className={styles.stageBadge}>

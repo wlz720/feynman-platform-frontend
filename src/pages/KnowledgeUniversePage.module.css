@@ -47,23 +47,42 @@
   font-weight: 600;
 }
 
+.stageStats {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.legendCount {
+  margin-left: 2px;
+  color: #c4b5fd;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 .canvasWrap {
   position: relative;
   width: 100%;
-  background: #070d1a;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(76, 29, 149, 0.2), transparent 56%),
+    radial-gradient(circle at 50% 50%, #0a1024 0%, #04070f 58%, #010207 100%);
 }
 
 .canvas {
+  position: relative;
   width: 100%;
   height: clamp(460px, 66vh, 660px);
   min-height: 440px;
   display: block;
+  filter: saturate(1.12) contrast(1.04);
 }
 
 .helpCard {
   position: absolute;
   top: 14px;
   left: 14px;
+  z-index: 3;
   max-width: 260px;
   padding: 9px 13px;
   border-radius: 10px;
@@ -87,6 +106,7 @@
   position: absolute;
   top: 14px;
   right: 14px;
+  z-index: 3;
   padding: 10px 13px;
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.22);
@@ -139,6 +159,7 @@
   position: absolute;
   left: 16px;
   bottom: 16px;
+  z-index: 4;
   width: 350px;
   max-width: calc(100% - 32px);
   padding: 15px 16px;

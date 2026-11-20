@@ -124,8 +124,10 @@
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
-  gap: 22px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 13px;
+  min-width: 292px;
   padding: 18px 24px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -133,11 +135,18 @@
   backdrop-filter: blur(8px);
 }
 
+.heroMetricRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .heroMetric {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 76px;
+  flex: 1;
+  min-width: 72px;
 }
 
 .heroMetricValue {
@@ -145,17 +154,54 @@
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroMetricUnit {
+  margin-left: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .heroMetricLabel {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.66);
+  white-space: nowrap;
 }
 
 .heroMetricDivider {
   width: 1px;
   height: 34px;
   background: rgba(255, 255, 255, 0.22);
+}
+
+.heroProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.heroProgressTrack {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+.heroProgressFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c4b5fd, #67e8f9);
+  box-shadow: 0 0 14px rgba(196, 181, 253, 0.65);
+  transition: width 0.3s ease;
+}
+
+.heroProgressLabel {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.62);
+  font-variant-numeric: tabular-nums;
 }
 
 .kpGrid {
@@ -349,6 +395,159 @@
   white-space: nowrap;
 }
 
+.focusBar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 18px;
+  padding: 15px 18px;
+  border-radius: 16px;
+  border: 1px solid #ddd6fe;
+  background:
+    radial-gradient(380px 120px at 0% 0%, rgba(251, 191, 36, 0.09), transparent 70%),
+    linear-gradient(135deg, #fbf8ff, #f3efff 70%, #eff6ff);
+  box-shadow: var(--shadow-xs);
+}
+
+.focusIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 7px 16px rgba(245, 158, 11, 0.28);
+}
+
+.focusCopy {
+  flex: 1;
+  min-width: 0;
+}
+
+.focusEyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: #8b5cf6;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.focusTitle {
+  display: block;
+  color: #3b236c;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.focusText {
+  margin: 3px 0 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.focusAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 9px 15px;
+  border-radius: 10px;
+  background: var(--brand-600);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 18px rgba(109, 40, 217, 0.24);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.focusAction:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 24px rgba(109, 40, 217, 0.3);
+}
+
+.statHead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.statIconReview {
+  background: #fff7ed;
+  color: #d97706;
+}
+
+.statIconIdle {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.statIconScore {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.statIconTop {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.statMeter {
+  height: 5px;
+  margin-top: 11px;
+  border-radius: 999px;
+  background: #f1f1f7;
+  overflow: hidden;
+}
+
+.statMeterFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.meterWarm {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.meterCool {
+  background: linear-gradient(90deg, #cbd5e1, #94a3b8);
+}
+
+.meterBrand {
+  background: linear-gradient(90deg, #a78bfa, #7c3aed);
+}
+
+.meterGreen {
+  background: linear-gradient(90deg, #34d399, #059669);
+}
+
+.statHint {
+  margin: 7px 0 0;
+  color: #98a0b3;
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+
 @media (max-width: 760px) {
   .hero {
     padding: 24px 22px;
@@ -356,11 +555,30 @@
 
   .heroMetrics {
     width: 100%;
+    min-width: 0;
     justify-content: space-between;
+  }
+
+  .heroMetricRow {
+    gap: 10px;
   }
 
   .heroMetric {
     min-width: 0;
+  }
+
+  .focusBar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .focusCopy {
+    flex: 1 1 calc(100% - 58px);
+  }
+
+  .focusAction {
+    width: 100%;
+    justify-content: center;
   }
 
   .kpGrid {
