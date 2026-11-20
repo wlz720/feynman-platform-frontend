@@ -11,9 +11,9 @@ import styles from './GraphPage.module.css';
 echarts.use([GraphChart, TooltipComponent, LegendComponent, CanvasRenderer]);
 
 const STATUS_COLORS = {
-  mastered: '#22c55e',
-  need_review: '#f97316',
-  not_started: '#8b5cf6',
+  mastered: '#5FB89A',
+  need_review: '#E88B6F',
+  not_started: '#9FB9C9',
 };
 
 function nodeColor(node) {
@@ -82,11 +82,11 @@ function GraphPage() {
       tooltip: {
         confine: true,
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
-        borderColor: '#ddd6fe',
+        borderColor: '#CBE8F2',
         borderWidth: 1,
         padding: [10, 12],
-        textStyle: { color: '#1f2330', fontSize: 12.5, lineHeight: 20 },
-        extraCssText: 'box-shadow: 0 12px 30px rgba(76,29,149,.16); border-radius: 10px;',
+        textStyle: { color: '#33475B', fontSize: 12.5, lineHeight: 20 },
+        extraCssText: 'box-shadow: 0 12px 30px rgba(51,71,91,.12); border-radius: 10px;',
         formatter: (params) => {
           if (params.dataType === 'edge') {
             return '<b>引用关系</b><br/>正文中提到了该知识点的标题';
@@ -102,10 +102,10 @@ function GraphPage() {
             : '';
           const excerpt = String(node.value || '').slice(0, 80);
           return [
-            `<b style="color:#4c1d95">${escapeHtml(node.name)}</b>`,
+            `<b style="color:#2F6484">${escapeHtml(node.name)}</b>`,
             `状态：${escapeHtml(statusText)}${created ? ` · 创建于 ${escapeHtml(created)}` : ''}`,
             excerpt ? `${escapeHtml(excerpt)}${String(node.value || '').length > 80 ? '…' : ''}` : '',
-            '<span style="color:#8b5cf6">点击节点查看详情</span>',
+            '<span style="color:#3E7FA6">点击节点查看详情</span>',
           ]
             .filter(Boolean)
             .join('<br/>');
@@ -117,7 +117,7 @@ function GraphPage() {
         icon: 'circle',
         itemWidth: 9,
         itemHeight: 9,
-        textStyle: { color: '#6b7280', fontSize: 12 },
+        textStyle: { color: '#5B7487', fontSize: 12 },
       },
       series: [
         {
@@ -142,14 +142,14 @@ function GraphPage() {
             itemStyle: {
               color: nodeColor(node),
               shadowBlur: 14,
-              shadowColor: 'rgba(76, 29, 149, 0.18)',
+              shadowColor: 'rgba(51, 71, 91, 0.14)',
             },
             label: { show: true },
           })),
           links: graphData.links.map((link) => ({
             ...link,
-            lineStyle: { color: '#c4b5fd', width: 1.5, curveness: 0.1 },
-            emphasis: { lineStyle: { width: 4, color: '#8b5cf6' } },
+            lineStyle: { color: '#B4D2DF', width: 1.5, curveness: 0.1 },
+            emphasis: { lineStyle: { width: 4, color: '#3E7FA6' } },
           })),
           edgeSymbol: ['none', 'arrow'],
           edgeSymbolSize: 7,
@@ -158,7 +158,7 @@ function GraphPage() {
             position: 'right',
             formatter: '{b}',
             fontSize: 11.5,
-            color: '#374151',
+            color: '#33475B',
           },
           force: {
             repulsion: 240,

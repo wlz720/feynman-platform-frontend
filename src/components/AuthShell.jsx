@@ -1,3 +1,5 @@
+import { Goldfish, WaveLine } from './SummerDecor';
+
 const FEATURES = [
   { icon: '◉', text: '录音复述 · 自动转写' },
   { icon: '✦', text: 'AI 教练 · 润色评分' },
@@ -34,6 +36,10 @@ function AuthShell({ eyebrow, title, subtitle, children, footer }) {
             </div>
           </div>
           <div className="auth-visual-foot">FEYNMAN LEARNING PLATFORM · 2026</div>
+          <div className="auth-visual-art" aria-hidden="true">
+            <WaveLine className="auth-visual-wave" height={16} />
+            <Goldfish className="auth-visual-fish" />
+          </div>
         </aside>
 
         <section className="auth-form-side">

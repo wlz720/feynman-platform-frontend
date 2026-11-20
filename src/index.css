@@ -239,10 +239,11 @@ a {
 
 .page-title {
   margin: 0;
+  font-family: var(--font-serif);
   font-size: clamp(26px, 3.2vw, 34px);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.015em;
+  line-height: 1.28;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   color: var(--brand-900);
 }
 

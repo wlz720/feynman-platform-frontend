@@ -1,17 +1,22 @@
-/* 测评记录页 */
+/* 测评记录页 —— 夏日水域：细描边、低饱和状态色 */
 .backLink {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 14px;
-  color: var(--muted);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-light);
+  font-family: inherit;
   font-size: 13px;
   font-weight: 650;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .backLink:hover {
-  color: var(--brand-700);
+  color: var(--primary-ink);
 }
 
 .summaryGrid {
@@ -25,18 +30,18 @@
   position: relative;
   padding: 19px 20px;
   margin-bottom: 14px;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.96);
   box-shadow: var(--shadow-xs);
 }
 
 .attemptCard.correct {
-  border-left: 3px solid #34d399;
+  border-left: 3px solid var(--success);
 }
 
 .attemptCard.wrong {
-  border-left: 3px solid #f87171;
+  border-left: 3px solid var(--danger);
 }
 
 .attemptHead {
@@ -50,7 +55,7 @@
 .attemptTime {
   margin-left: auto;
   font-size: 11.5px;
-  color: #9aa0b2;
+  color: var(--ink-light);
 }
 
 .attemptQuestion {
@@ -82,7 +87,7 @@
   display: flex;
   gap: 8px;
   padding: 9px 12px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: #fff;
   color: var(--text-soft);
@@ -111,9 +116,9 @@
 
 .answerBlock {
   padding: 11px 13px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: #faf9ff;
+  background: var(--surface-soft);
   color: var(--text-soft);
   font-size: 13px;
   line-height: 1.75;
@@ -126,7 +131,7 @@
   margin-bottom: 5px;
   font-size: 12px;
   font-weight: 750;
-  color: var(--brand-700);
+  color: var(--primary-ink);
 }
 
 .feedbackRow {
@@ -137,7 +142,7 @@
   font-size: 13px;
   line-height: 1.7;
   color: var(--text-soft);
-  border-top: 1px dashed var(--line);
+  border-top: 1px solid var(--line);
 }
 
 .feedbackRow:first-child {
@@ -170,14 +175,14 @@
 .explanation {
   margin: 8px 0 0;
   padding-top: 9px;
-  border-top: 1px dashed var(--line);
+  border-top: 1px solid var(--line);
   color: var(--text-soft);
   font-size: 13px;
   line-height: 1.75;
 }
 
 .explanation strong {
-  color: var(--brand-800);
+  color: var(--primary-ink);
 }
 
 @media (max-width: 700px) {

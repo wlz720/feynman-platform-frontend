@@ -1,17 +1,22 @@
-/* 费曼复述录音页 */
+/* 费曼复述录音页 —— 夏日水域：浅色水彩舞台，录音时泛起涟漪 */
 .backLink {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 14px;
-  color: var(--muted);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-light);
+  font-family: inherit;
   font-size: 13px;
   font-weight: 650;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .backLink:hover {
-  color: var(--brand-700);
+  color: var(--primary-ink);
 }
 
 .stage {
@@ -20,14 +25,29 @@
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(250px, 0.85fr);
   gap: 22px;
-  padding: 26px 28px;
-  border-radius: 24px;
-  color: #fff;
+  padding: 26px 28px 30px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line);
+  color: var(--ink);
   background:
-    radial-gradient(480px 300px at 90% 0%, rgba(147, 197, 253, 0.3), transparent 62%),
-    radial-gradient(420px 300px at 0% 100%, rgba(244, 114, 182, 0.24), transparent 60%),
-    linear-gradient(140deg, #2e1065, #5b21b6 55%, #7c3aed);
-  box-shadow: 0 24px 55px rgba(59, 7, 100, 0.26);
+    radial-gradient(520px 320px at 88% 0%, rgba(126, 200, 227, 0.3), transparent 64%),
+    radial-gradient(440px 300px at 0% 100%, rgba(95, 184, 154, 0.14), transparent 62%),
+    radial-gradient(380px 260px at 60% 110%, rgba(232, 200, 122, 0.14), transparent 66%),
+    linear-gradient(165deg, #ffffff 0%, #f7fcfe 62%, #eff9fc 100%);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 舞台底部那条"水线"：让麦克风像浮在水面上 */
+.stage::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(126, 200, 227, 0.16) 100%);
+  mask-image: radial-gradient(120% 90% at 50% 100%, #000 0%, rgba(0, 0, 0, 0.55) 62%, transparent 100%);
 }
 
 .stageMain {
@@ -46,23 +66,25 @@
   gap: 8px;
   padding: 6px 13px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--ink-light);
 }
 
 .liveDot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: var(--warning);
+  opacity: 0.5;
 }
 
 .liveDot.recording {
-  background: #f87171;
-  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.18);
+  background: var(--warning);
+  opacity: 1;
+  box-shadow: 0 0 0 4px rgba(232, 139, 111, 0.22);
   animation: blink 1.2s ease-in-out infinite;
 }
 
@@ -76,28 +98,31 @@
   position: relative;
   width: 104px;
   height: 104px;
-  margin: 24px 0 16px;
+  margin: 22px 0 16px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.13);
-  font-size: 38px;
-  box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--brand-200);
+  background:
+    radial-gradient(circle at 50% 30%, #ffffff 0%, #f2fafd 70%, #e6f5fa 100%);
+  font-size: 36px;
+  color: var(--primary-ink);
+  box-shadow: 0 10px 26px rgba(51, 71, 91, 0.08), inset 0 0 0 6px rgba(255, 255, 255, 0.6);
 }
 
 .micOrb.recording {
-  background: rgba(248, 113, 113, 0.22);
-  border-color: rgba(252, 165, 165, 0.7);
+  border-color: rgba(232, 139, 111, 0.65);
+  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #fdf2ed 72%, #fbe6dd 100%);
+  color: var(--warning-text);
 }
 
 .micOrb.recording::before,
 .micOrb.recording::after {
   content: "";
   position: absolute;
-  inset: -12px;
+  inset: -10px;
   border-radius: 50%;
-  border: 1px solid rgba(252, 165, 165, 0.55);
+  border: 1px solid rgba(232, 139, 111, 0.5);
   animation: pulse 2s ease-out infinite;
 }
 
@@ -107,8 +132,8 @@
 
 @keyframes pulse {
   0% {
-    transform: scale(0.9);
-    opacity: 0.8;
+    transform: scale(0.92);
+    opacity: 0.75;
   }
   100% {
     transform: scale(1.5);
@@ -117,19 +142,20 @@
 }
 
 .timer {
-  font-family: var(--font-mono);
-  font-size: 38px;
+  font-family: var(--font-serif);
+  font-size: 40px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
+  color: var(--primary-ink);
 }
 
 .timerLabel {
   margin-top: 7px;
   font-size: 11px;
   letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--ink-light);
 }
 
 .wave {
@@ -144,13 +170,13 @@
   width: 3px;
   height: 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(126, 200, 227, 0.5);
   transition: height 0.2s ease;
 }
 
 .wave.active span {
   animation: wave 1s ease-in-out infinite;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(53, 119, 156, 0.75);
 }
 
 @keyframes wave {
@@ -175,19 +201,21 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 11px 20px;
-  border: none;
-  border-radius: 11px;
-  background: #fff;
-  color: var(--brand-800);
+  padding: 11px 22px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #35779c;
+  color: #fff;
   font-size: 13.5px;
   font-weight: 750;
-  box-shadow: 0 10px 24px rgba(15, 8, 40, 0.22);
-  transition: transform 0.16s ease, opacity 0.16s ease;
+  box-shadow: 0 10px 24px rgba(51, 71, 91, 0.14);
+  transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
 }
 
 .recordBtn:hover:not(:disabled) {
   transform: translateY(-1px);
+  background: #2f6a8c;
+  box-shadow: 0 0 0 6px rgba(126, 200, 227, 0.18), 0 12px 26px rgba(51, 71, 91, 0.16);
 }
 
 .recordBtn:disabled {
@@ -199,23 +227,23 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 11px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 11px;
-  background: rgba(239, 68, 68, 0.9);
-  color: #fff;
+  padding: 11px 22px;
+  border: 1px solid var(--danger-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--danger-text);
   font-size: 13.5px;
   font-weight: 700;
-  transition: transform 0.16s ease, opacity 0.16s ease;
+  transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
 }
 
 .stopBtn:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: #dc2626;
+  background: var(--danger-soft);
 }
 
 .stopBtn:disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -224,9 +252,10 @@
   z-index: 1;
   align-self: center;
   padding: 18px 20px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-xs);
 }
 
 .stageTips h3 {
@@ -234,13 +263,13 @@
   font-size: 12.5px;
   font-weight: 750;
   letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--primary-ink);
 }
 
 .stageTips ul {
   margin: 0;
   padding-left: 16px;
-  color: rgba(255, 255, 255, 0.74);
+  color: var(--ink-light);
   font-size: 12px;
   line-height: 1.85;
 }
@@ -250,12 +279,14 @@
 }
 
 .stageError {
-  background: linear-gradient(140deg, #450a0a, #7f1d1d 55%, #b91c1c);
+  background:
+    radial-gradient(520px 320px at 88% 0%, rgba(242, 166, 141, 0.28), transparent 64%),
+    linear-gradient(165deg, #ffffff 0%, #fdf6f3 100%);
 }
 
 .statusHint {
   margin: 12px 18px 0;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--ink-light);
   font-size: 12.5px;
   line-height: 1.7;
 }
@@ -267,7 +298,7 @@
 .audio {
   width: 100%;
   margin-top: 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .sectionCard {
@@ -285,7 +316,7 @@
 
 .sectionMeta {
   font-size: 12px;
-  color: #9aa0b2;
+  color: var(--ink-light);
 }
 
 .transcriptArea {
@@ -305,7 +336,7 @@
 .transcriptHint {
   flex: 1;
   min-width: 220px;
-  color: var(--muted);
+  color: var(--ink-light);
   font-size: 12.5px;
   line-height: 1.65;
 }
@@ -320,8 +351,10 @@
   gap: 22px;
   align-items: center;
   padding: 18px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #faf8ff, #f3efff);
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(320px 200px at 92% 10%, rgba(126, 200, 227, 0.16), transparent 70%),
+    linear-gradient(135deg, #f9fdff, #f2fafd);
   border: 1px solid var(--brand-100);
 }
 
@@ -334,13 +367,14 @@
 
 .scoreCaption {
   font-size: 11.5px;
-  color: var(--muted);
+  color: var(--ink-light);
+  text-align: center;
 }
 
 .evaluation {
   margin: 0;
   padding: 2px 0 2px 16px;
-  border-left: 3px solid var(--brand-300);
+  border-left: 3px solid var(--primary);
   color: var(--text-soft);
   font-size: 14px;
   line-height: 1.85;
@@ -349,16 +383,16 @@
 .polishedPanel {
   margin-top: 14px;
   padding: 15px 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: #fbfaff;
+  background: var(--surface-soft);
 }
 
 .polishedPanel h3 {
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: 750;
-  color: var(--brand-800);
+  color: var(--primary-ink);
 }
 
 .polishedBody {
@@ -380,7 +414,7 @@
 
 .listCard {
   padding: 15px 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
 }
 
@@ -423,7 +457,7 @@
 @media (max-width: 820px) {
   .stage {
     grid-template-columns: 1fr;
-    padding: 22px 18px;
+    padding: 22px 18px 26px;
   }
 
   .stageTips {

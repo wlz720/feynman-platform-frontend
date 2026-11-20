@@ -25,9 +25,9 @@ import styles from './KnowledgeUniversePage.module.css';
 //   2. 节点与边在每一帧跟随模拟结果移动，形成会「呼吸」的星系；
 //   3. 点击星球用 React 浮层展示内容摘要（替代 alert），并可跳转详情。
 const STATUS_COLORS = {
-  mastered: 0x22c55e,
-  need_review: 0xf97316,
-  not_started: 0x8b5cf6
+  mastered: 0x5fb89a,
+  need_review: 0xe88b6f,
+  not_started: 0x9fb9c9
 };
 
 const STATUS_LABELS = {
@@ -37,9 +37,9 @@ const STATUS_LABELS = {
 };
 
 const STATUS_HEX = {
-  mastered: '#22c55e',
-  need_review: '#f97316',
-  not_started: '#8b5cf6'
+  mastered: '#5FB89A',
+  need_review: '#E88B6F',
+  not_started: '#9FB9C9'
 };
 
 function nodeColor(node) {
@@ -157,7 +157,7 @@ function KnowledgeUniversePage() {
 
     // 光照：冷暖两色点光 + 环境光，保证星球暗部不死黑
     scene.add(new THREE.AmbientLight(0xffffff, 0.62));
-    const violetLight = new THREE.PointLight(0x8b5cf6, 180, 0, 2);
+    const violetLight = new THREE.PointLight(0x3e7fa6, 180, 0, 2);
     violetLight.position.set(-55, 42, 62);
     scene.add(violetLight);
     const cyanLight = new THREE.PointLight(0x22d3ee, 120, 0, 2);
@@ -169,7 +169,7 @@ function KnowledgeUniversePage() {
     // 背景星尘与两团星云柔光
     const starfield = createStarfield({ count: 1100, minRadius: 90, maxRadius: 320, size: 0.95 });
     scene.add(starfield);
-    const nebulaA = createGlowSprite(glowTexture, 0x7c3aed, 130, 0.12);
+    const nebulaA = createGlowSprite(glowTexture, 0x2f6484, 130, 0.12);
     nebulaA.position.set(-45, 30, -90);
     scene.add(nebulaA);
     const nebulaB = createGlowSprite(glowTexture, 0x0ea5e9, 100, 0.08);
@@ -177,13 +177,13 @@ function KnowledgeUniversePage() {
     scene.add(nebulaB);
 
     // 中心微光与几圈若隐若现的星系轨道
-    const coreGlow = createGlowSprite(glowTexture, 0xc4b5fd, 38, 0.18);
+    const coreGlow = createGlowSprite(glowTexture, 0x8fd0e5, 38, 0.18);
     scene.add(coreGlow);
     const orbitRingObjects = [];
     [46, 74, 108].forEach((radius, index) => {
       const geometry = new THREE.TorusGeometry(radius, 0.06, 6, 220);
       const material = new THREE.MeshBasicMaterial({
-        color: index === 1 ? 0x38bdf8 : 0x8b5cf6,
+        color: index === 1 ? 0x38bdf8 : 0x7ec8e3,
         transparent: true,
         opacity: 0.08,
         blending: THREE.AdditiveBlending,

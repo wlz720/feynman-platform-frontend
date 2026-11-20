@@ -1,21 +1,36 @@
-/* 3D 知识宇宙页 */
+/* 3D 知识宇宙页 —— 场景保持深色，浮层/图例用「夏夜海面」暗色变体 */
 .universeCard {
   overflow: hidden;
-  border-radius: 20px;
-  border: 1px solid #1e293b;
-  background: #070d1a;
-  box-shadow: 0 22px 52px rgba(7, 13, 26, 0.34);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(126, 200, 227, 0.26);
+  background: var(--night-bg);
+  box-shadow: 0 22px 52px rgba(14, 30, 46, 0.3);
 }
 
 .stageHead {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 13px 17px;
-  border-bottom: 1px solid #1e293b;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(7, 13, 26, 0.96));
+  padding: 13px 17px 15px;
+  border-bottom: 1px solid rgba(126, 200, 227, 0.16);
+  background: linear-gradient(180deg, rgba(23, 44, 66, 0.96), rgba(14, 30, 46, 0.96));
+}
+
+/* 表头下缘的夜海白浪细线 */
+.stageHead::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 8px;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'%3E%3Cpath d='M0 5 C5 1 10 9 15 5 S25 1 30 5 S38 9 40 5' fill='none' stroke='%237EC8E3' stroke-opacity='0.42' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 40px 8px;
 }
 
 .stageTitle {
@@ -26,12 +41,12 @@
 
 .stageTitle strong {
   font-size: 14px;
-  color: #f8fafc;
+  color: var(--night-ink);
 }
 
 .stageTitle span {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: var(--night-ink-light);
 }
 
 .stageBadge {
@@ -40,9 +55,9 @@
   gap: 6px;
   padding: 5px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(148, 163, 184, 0.1);
-  color: #cbd5e1;
+  border: 1px solid rgba(126, 200, 227, 0.28);
+  background: rgba(126, 200, 227, 0.1);
+  color: var(--night-ink-light);
   font-size: 11.5px;
   font-weight: 600;
 }
@@ -56,7 +71,7 @@
 
 .legendCount {
   margin-left: 2px;
-  color: #c4b5fd;
+  color: #a9d9ea;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -65,8 +80,9 @@
   position: relative;
   width: 100%;
   background:
-    radial-gradient(ellipse at 50% 42%, rgba(76, 29, 149, 0.2), transparent 56%),
-    radial-gradient(circle at 50% 50%, #0a1024 0%, #04070f 58%, #010207 100%);
+    radial-gradient(ellipse at 50% 42%, rgba(46, 100, 132, 0.24), transparent 58%),
+    radial-gradient(circle at 50% 120%, rgba(126, 200, 227, 0.26), transparent 50%),
+    radial-gradient(circle at 50% 46%, #0d1f30 0%, #071320 58%, #030910 100%);
 }
 
 .canvas {
@@ -75,7 +91,7 @@
   height: clamp(460px, 66vh, 660px);
   min-height: 440px;
   display: block;
-  filter: saturate(1.12) contrast(1.04);
+  filter: saturate(1.08) contrast(1.03);
 }
 
 .helpCard {
@@ -85,10 +101,10 @@
   z-index: 3;
   max-width: 260px;
   padding: 9px 13px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(15, 23, 42, 0.6);
-  color: #cbd5e1;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(126, 200, 227, 0.24);
+  background: rgba(14, 30, 46, 0.62);
+  color: var(--night-ink-light);
   font-size: 11.5px;
   line-height: 1.7;
   pointer-events: none;
@@ -98,7 +114,7 @@
 .helpCard strong {
   display: block;
   margin-bottom: 3px;
-  color: #f8fafc;
+  color: var(--night-ink);
   font-size: 12px;
 }
 
@@ -108,10 +124,10 @@
   right: 14px;
   z-index: 3;
   padding: 10px 13px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(15, 23, 42, 0.7);
-  color: #e2e8f0;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(126, 200, 227, 0.24);
+  background: rgba(14, 30, 46, 0.72);
+  color: var(--night-ink);
   font-size: 11.5px;
   pointer-events: none;
   backdrop-filter: blur(8px);
@@ -134,8 +150,8 @@
 .legendMeta {
   margin-top: 7px;
   padding-top: 7px;
-  border-top: 1px solid rgba(148, 163, 184, 0.18);
-  color: #94a3b8;
+  border-top: 1px solid rgba(126, 200, 227, 0.2);
+  color: var(--night-ink-light);
   font-size: 11px;
 }
 
@@ -145,14 +161,14 @@
   max-width: 240px;
   padding: 7px 11px;
   border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(2, 6, 23, 0.92);
-  color: #f8fafc;
+  border: 1px solid rgba(126, 200, 227, 0.4);
+  background: rgba(6, 16, 26, 0.94);
+  color: var(--night-ink);
   font-size: 12px;
   line-height: 1.5;
   pointer-events: none;
   z-index: 3;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 18px rgba(2, 8, 16, 0.36);
 }
 
 .selectionCard {
@@ -164,10 +180,10 @@
   max-width: calc(100% - 32px);
   padding: 15px 16px;
   border-radius: 13px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.94);
-  color: #f8fafc;
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(126, 200, 227, 0.4);
+  background: var(--night-surface);
+  color: var(--night-ink);
+  box-shadow: 0 16px 38px rgba(2, 8, 16, 0.44);
   backdrop-filter: blur(10px);
 }
 
@@ -187,15 +203,16 @@
 .closeBtn {
   border: none;
   background: transparent;
-  color: #94a3b8;
+  color: var(--night-ink-light);
   font-size: 18px;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .closeBtn:hover {
-  color: #f8fafc;
+  color: var(--night-ink);
 }
 
 .selectionStatus {
@@ -204,13 +221,13 @@
   gap: 6px;
   margin-top: 7px;
   font-size: 11.5px;
-  color: #fbbf24;
+  color: #f0d19a;
   font-weight: 650;
 }
 
 .selectionPreview {
   margin: 9px 0 13px;
-  color: #cbd5e1;
+  color: var(--night-ink-light);
   font-size: 12.5px;
   line-height: 1.7;
 }
@@ -219,18 +236,19 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 13px;
-  border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.7);
-  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
-  color: #fff;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 200, 227, 0.55);
+  background: linear-gradient(135deg, #3e7fa6, #2f6484);
+  color: #ffffff;
   font-size: 12.5px;
   font-weight: 650;
-  box-shadow: 0 6px 14px rgba(109, 40, 217, 0.28);
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(2, 8, 16, 0.4);
 }
 
 .detailBtn:hover {
-  filter: brightness(1.08);
+  background: linear-gradient(135deg, #4a90b8, #35779c);
 }
 
 @media (max-width: 700px) {

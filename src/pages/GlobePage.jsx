@@ -13,9 +13,9 @@ import styles from './GlobePage.module.css';
 
 /* 与知识图谱 / 3D 知识宇宙保持同一套状态配色 */
 const STATUS_META = {
-  mastered: { color: '#22c55e', label: '已掌握' },
-  need_review: { color: '#f97316', label: '待复习' },
-  not_started: { color: '#8b5cf6', label: '未开始' }
+  mastered: { color: '#5FB89A', label: '已掌握' },
+  need_review: { color: '#E88B6F', label: '待复习' },
+  not_started: { color: '#9FB9C9', label: '未开始' }
 };
 
 const getStatus = (node) => {
@@ -199,7 +199,7 @@ export default function GlobePage() {
             arcType: Cesium.ArcType.NONE,
             material: new Cesium.PolylineGlowMaterialProperty({
               glowPower: 0.22,
-              color: Cesium.Color.fromCssColorString('#a78bfa').withAlpha(0.9)
+              color: Cesium.Color.fromCssColorString('#7ec8e3').withAlpha(0.9)
             })
           }
         });
@@ -299,15 +299,15 @@ export default function GlobePage() {
         </div>
         <div className={styles.legend}>
           <span className={styles.legendPill}>
-            <i className={styles.legendDot} style={{ background: '#22c55e', color: '#22c55e' }} />
+            <i className={styles.legendDot} style={{ background: '#5FB89A', color: '#5FB89A' }} />
             已掌握 <b className={styles.legendCount}>{counts.mastered}</b>
           </span>
           <span className={styles.legendPill}>
-            <i className={styles.legendDot} style={{ background: '#f97316', color: '#f97316' }} />
+            <i className={styles.legendDot} style={{ background: '#E88B6F', color: '#E88B6F' }} />
             待复习 <b className={styles.legendCount}>{counts.needReview}</b>
           </span>
           <span className={styles.legendPill}>
-            <i className={styles.legendDot} style={{ background: '#8b5cf6', color: '#8b5cf6' }} />
+            <i className={styles.legendDot} style={{ background: '#9FB9C9', color: '#9FB9C9' }} />
             未开始 <b className={styles.legendCount}>{counts.total - counts.mastered - counts.needReview}</b>
           </span>
         </div>

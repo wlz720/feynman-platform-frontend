@@ -38,7 +38,7 @@ export function createGlowSprite(glowTexture, color, size = 3, opacity = 0.6) {
 }
 
 // 用 CSS2D 做标签：文字始终保持屏幕像素大小，不会被 3D 透视缩成一条线。
-export function createNodeLabel(text, accent = '#8b5cf6') {
+export function createNodeLabel(text, accent = '#7EC8E3') {
   const div = document.createElement('div');
   div.className = 'three-label';
   div.textContent = String(text || '未命名知识点');
@@ -55,7 +55,7 @@ export function createStarfield({
 } = {}) {
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
-  const palette = [0xffffff, 0xbfdbfe, 0xc4b5fd, 0x93c5fd];
+  const palette = [0xffffff, 0xbfdbfe, 0x8fd0e5, 0x93c5fd];
 
   for (let i = 0; i < count; i += 1) {
     const radius = minRadius + Math.random() * (maxRadius - minRadius);

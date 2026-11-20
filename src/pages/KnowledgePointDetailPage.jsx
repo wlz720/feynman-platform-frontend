@@ -91,7 +91,7 @@ function KnowledgePointDetailPage() {
   const attempt = kp.lastAttempt;
   const statusKey = kp.status || 'not_started';
   const ringColor =
-    attempt?.score >= 80 ? '#10b981' : attempt?.score >= 60 ? '#8b5cf6' : '#ef4444';
+    attempt?.score >= 80 ? '#3F9C81' : attempt?.score >= 60 ? '#35779C' : '#C36154';
 
   return (
     <div className="page">

@@ -297,7 +297,7 @@ function QuizPage() {
   const setupLocked = busy || isRecording || isTranscribing;
   const canStart = Boolean(type && difficulty) && !setupLocked;
   const score = Number(result?.score) || 0;
-  const scoreColor = score >= 80 ? '#10b981' : score >= 60 ? '#8b5cf6' : '#ef4444';
+  const scoreColor = score >= 80 ? '#3F9C81' : score >= 60 ? '#35779C' : '#C36154';
   const reviewFailed = reviewMessage.includes('失败');
 
   const optionClass = (key) => {

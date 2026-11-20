@@ -163,7 +163,7 @@ function FeynmanRecordPage() {
   const textEdited = Boolean(aiFeedback) && transcribedText.trim() !== evaluatedText.trim();
   const needsConfirm = Boolean(transcribedText.trim()) && !aiFeedback && !isEvaluating;
   const score = Number(aiFeedback?.score) || 0;
-  const ringColor = score >= 80 ? '#10b981' : score >= REVIEW_THRESHOLD ? '#8b5cf6' : '#ef4444';
+  const ringColor = score >= 80 ? '#3F9C81' : score >= REVIEW_THRESHOLD ? '#35779C' : '#C36154';
 
   return (
     <div className="page">

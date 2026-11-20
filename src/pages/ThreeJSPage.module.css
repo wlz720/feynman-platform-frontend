@@ -1,4 +1,4 @@
-/* 3D 视界页 */
+/* 3D 视界页 —— 场景保持深色，场景外的控件换成「夏夜海面」暗色变体 */
 .legendRow {
   display: flex;
   align-items: center;
@@ -14,7 +14,7 @@
   padding: 7px 13px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: var(--shadow-xs);
   font-size: 12.5px;
   color: var(--text-soft);
@@ -30,27 +30,42 @@
 
 .legendCount {
   font-weight: 800;
-  color: var(--brand-800);
+  color: var(--primary-ink);
   font-variant-numeric: tabular-nums;
 }
 
 .stageCard {
   overflow: hidden;
-  border-radius: 20px;
-  border: 1px solid #1e293b;
-  background: #0f172a;
-  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.3);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(126, 200, 227, 0.26);
+  background: var(--night-bg);
+  box-shadow: 0 20px 48px rgba(14, 30, 46, 0.28);
 }
 
 .stageHead {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 13px 17px;
-  border-bottom: 1px solid #1e293b;
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.92));
+  padding: 13px 17px 15px;
+  border-bottom: 1px solid rgba(126, 200, 227, 0.16);
+  background: linear-gradient(180deg, rgba(23, 44, 66, 0.92), rgba(14, 30, 46, 0.92));
+}
+
+/* 表头下缘一条夜海的白浪细线 */
+.stageHead::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 8px;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'%3E%3Cpath d='M0 5 C5 1 10 9 15 5 S25 1 30 5 S38 9 40 5' fill='none' stroke='%237EC8E3' stroke-opacity='0.42' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 40px 8px;
 }
 
 .stageTitle {
@@ -61,12 +76,12 @@
 
 .stageTitle strong {
   font-size: 14px;
-  color: #f8fafc;
+  color: var(--night-ink);
 }
 
 .stageTitle span {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: var(--night-ink-light);
 }
 
 .stageBadge {
@@ -75,19 +90,21 @@
   gap: 6px;
   padding: 5px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(148, 163, 184, 0.1);
-  color: #cbd5e1;
+  border: 1px solid rgba(126, 200, 227, 0.28);
+  background: rgba(126, 200, 227, 0.1);
+  color: var(--night-ink-light);
   font-size: 11.5px;
   font-weight: 600;
 }
 
+/* 夜空/夜海：保留原场景，只把氛围色从紫换成深海蓝 */
 .canvasWrap {
   position: relative;
   width: 100%;
   background:
-    radial-gradient(ellipse at 50% 42%, rgba(76, 29, 149, 0.22), transparent 58%),
-    radial-gradient(circle at 50% 50%, #0a1024 0%, #04070f 58%, #010207 100%);
+    radial-gradient(ellipse at 50% 42%, rgba(46, 100, 132, 0.26), transparent 60%),
+    radial-gradient(circle at 50% 118%, rgba(126, 200, 227, 0.24), transparent 52%),
+    radial-gradient(circle at 50% 46%, #0d1f30 0%, #071320 58%, #030910 100%);
 }
 
 .canvas {
@@ -96,7 +113,7 @@
   height: clamp(440px, 64vh, 640px);
   min-height: 420px;
   display: block;
-  filter: saturate(1.12) contrast(1.04);
+  filter: saturate(1.08) contrast(1.03);
 }
 
 .hoverCard {
@@ -106,15 +123,15 @@
   z-index: 3;
   max-width: 320px;
   padding: 11px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(15, 23, 42, 0.9);
-  color: #f8fafc;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(126, 200, 227, 0.3);
+  background: var(--night-surface);
+  color: var(--night-ink);
   font-size: 12.5px;
   line-height: 1.65;
   pointer-events: none;
   backdrop-filter: blur(8px);
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.4);
+  box-shadow: 0 10px 24px rgba(2, 8, 16, 0.42);
 }
 
 .hoverName {
@@ -124,12 +141,12 @@
 }
 
 .hoverText {
-  color: #cbd5e1;
+  color: var(--night-ink-light);
 }
 
 .hoverHint {
   margin-top: 5px;
-  color: #94a3b8;
+  color: rgba(159, 188, 204, 0.72);
   font-size: 11px;
 }
 
@@ -140,9 +157,9 @@
   z-index: 3;
   padding: 6px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.65);
-  color: #cbd5e1;
+  border: 1px solid rgba(126, 200, 227, 0.22);
+  background: rgba(14, 30, 46, 0.68);
+  color: var(--night-ink-light);
   font-size: 11px;
   pointer-events: none;
   backdrop-filter: blur(6px);

@@ -19,15 +19,15 @@ import styles from './ThreeJSPage.module.css';
 //   graph —— 课件第三部分 + 课后挑战：知识图谱数据映射为 3D「知识星球」，
 //            Raycaster 实现鼠标悬停高亮星球与相连航线
 const STATUS_COLORS = {
-  mastered: 0x22c55e,
-  need_review: 0xf97316,
-  not_started: 0x8b5cf6
+  mastered: 0x5fb89a,
+  need_review: 0xe88b6f,
+  not_started: 0x9fb9c9
 };
 
 const STATUS_HEX = {
-  mastered: '#22c55e',
-  need_review: '#f97316',
-  not_started: '#8b5cf6'
+  mastered: '#5FB89A',
+  need_review: '#E88B6F',
+  not_started: '#9FB9C9'
 };
 
 function statusColor(node) {
@@ -115,7 +115,7 @@ function ThreeJSPage() {
 
     // ---------- 光照：冷暖双色点光 + 环境光，让星球有体积感 ----------
     scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-    const violetLight = new THREE.PointLight(0x8b5cf6, 90, 0, 2);
+    const violetLight = new THREE.PointLight(0x3e7fa6, 90, 0, 2);
     violetLight.position.set(-12, 8, 10);
     scene.add(violetLight);
     const cyanLight = new THREE.PointLight(0x22d3ee, 65, 0, 2);
@@ -129,7 +129,7 @@ function ThreeJSPage() {
     disposables.push(starfield.geometry, starfield.material);
 
     // 星云光晕：两团巨大的柔光，作为深空底色
-    const nebulaA = createGlowSprite(glowTexture, 0x7c3aed, 85, 0.11);
+    const nebulaA = createGlowSprite(glowTexture, 0x2f6484, 85, 0.11);
     nebulaA.position.set(-25, 14, -38);
     scene.add(nebulaA);
     const nebulaB = createGlowSprite(glowTexture, 0x0ea5e9, 64, 0.09);
@@ -147,7 +147,7 @@ function ThreeJSPage() {
       const geometry = new THREE.BoxGeometry(2.2, 2.2, 2.2, 2, 2, 2);
       const material = new THREE.MeshPhysicalMaterial({
         color: 0x071b12,
-        emissive: 0x22c55e,
+        emissive: 0x5fb89a,
         emissiveIntensity: 0.22,
         roughness: 0.12,
         metalness: 0.75,
@@ -170,7 +170,7 @@ function ThreeJSPage() {
       disposables.push(edges, edgeMaterial);
 
       const ringMaterial = new THREE.MeshBasicMaterial({
-        color: 0x8b5cf6,
+        color: 0x7ec8e3,
         transparent: true,
         opacity: 0.45,
         blending: THREE.AdditiveBlending
@@ -182,7 +182,7 @@ function ThreeJSPage() {
       world.add(ring);
       disposables.push(ringGeometry, ringMaterial);
 
-      const glow = createGlowSprite(glowTexture, 0x22c55e, 13, 0.24);
+      const glow = createGlowSprite(glowTexture, 0x5fb89a, 13, 0.24);
       glow.material.depthTest = true;
       glow.position.set(0, 0, -1.6);
       glow.renderOrder = 0;
@@ -293,7 +293,7 @@ function ThreeJSPage() {
 
       // 星系中心的一颗小核心，给整个场景一个视觉锚点
       const coreMaterial = new THREE.MeshBasicMaterial({
-        color: 0xc4b5fd,
+        color: 0x8fd0e5,
         transparent: true,
         opacity: 0.9
       });
