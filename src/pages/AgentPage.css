@@ -1,7 +1,9 @@
-/* 课时11：AI 助手（RAG）聊天界面 */
+/* 课时11：AI 助手（RAG）聊天界面 —— 日系夏日·海浪气泡版 */
+
+/* 海浪下缘的气泡形状：用 SVG 遮罩实现，任意高度都能保持缓和波浪 */
 .agentShell {
   display: grid;
-  grid-template-columns: 282px minmax(0, 1fr);
+  grid-template-columns: 286px minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -12,11 +14,15 @@
   gap: 12px;
 }
 
+/* 左栏：浅蓝水彩引导区 */
 .infoCard {
-  padding: 18px 19px;
+  padding: 19px;
   border-radius: 18px;
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(250, 249, 255, 0.96), #fff);
+  background:
+    radial-gradient(220px 150px at 8% -10%, rgba(126, 200, 227, 0.34), transparent 70%),
+    radial-gradient(180px 140px at 100% 0%, rgba(95, 184, 154, 0.14), transparent 72%),
+    #fdfefe;
   box-shadow: var(--shadow-xs);
 }
 
@@ -24,16 +30,16 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  margin: 0 0 11px;
+  margin: 0 0 12px;
   font-size: 13.5px;
   font-weight: 750;
-  color: var(--brand-800);
+  color: var(--brand-900);
 }
 
 .steps {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 11px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -50,22 +56,23 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  border-radius: 7px;
-  background: var(--brand-100);
-  color: var(--brand-700);
+  border-radius: 50%;
+  background: rgba(126, 200, 227, 0.26);
+  border: 1px solid rgba(126, 200, 227, 0.5);
+  color: var(--primary-ink);
   font-size: 11px;
   font-weight: 800;
   flex-shrink: 0;
 }
 
 .stepText {
-  color: var(--muted);
+  color: var(--text-soft);
   font-size: 12.5px;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .stepText strong {
-  color: var(--text-soft);
+  color: var(--brand-900);
   font-weight: 700;
 }
 
@@ -73,25 +80,26 @@
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--line);
+  margin-top: 15px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
 }
 
 .kbCount {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--brand-700);
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary-ink);
   line-height: 1;
 }
 
 .kbLabel {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--ink-light);
 }
 
 .suggestionPanel {
-  padding: 18px 19px;
+  padding: 19px;
   border-radius: 18px;
   border: 1px solid var(--line);
   background: #fff;
@@ -99,34 +107,39 @@
 }
 
 .suggestionTitle {
-  margin: 0 0 9px;
+  margin: 0 0 10px;
   font-size: 13.5px;
   font-weight: 750;
-  color: var(--brand-800);
+  color: var(--brand-900);
 }
 
 .suggestionList {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
+/* 推荐问题：涟漪胶囊，hover 向外扩散一圈 */
 .suggestionBtn {
+  position: relative;
   text-align: left;
-  padding: 9px 11px;
-  border-radius: 10px;
+  padding: 10px 13px;
+  border-radius: 999px;
   border: 1px solid var(--line);
-  background: #fcfbff;
+  background: #fbfdfe;
   color: var(--text-soft);
   font-size: 12px;
   line-height: 1.6;
-  transition: all 0.16s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease,
+    background 0.18s ease, color 0.18s ease;
 }
 
 .suggestionBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
   border-color: var(--brand-300);
-  background: var(--brand-50);
-  color: var(--brand-800);
+  background: #f2fafd;
+  color: var(--brand-900);
+  box-shadow: 0 0 0 6px rgba(126, 200, 227, 0.16);
 }
 
 .suggestionBtn:disabled {
@@ -136,11 +149,12 @@
 
 .suggestionEmpty {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink-light);
   font-size: 12.5px;
-  line-height: 1.75;
+  line-height: 1.8;
 }
 
+/* 右侧对话区 */
 .chatPanel {
   display: flex;
   flex-direction: column;
@@ -149,17 +163,34 @@
   border-radius: 20px;
   border: 1px solid var(--line);
   background: #fff;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 14px 32px rgba(51, 71, 91, 0.07);
   overflow: hidden;
 }
 
 .chatHeader {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 13px 17px;
+  gap: 11px;
+  padding: 14px 18px 17px;
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #fdfcff, #fff);
+  background: linear-gradient(180deg, #fbfeff, #ffffff);
+  overflow: hidden;
+}
+
+/* 表头底缘一条细海浪 */
+.chatHeader::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'%3E%3Cpath d='M0 5 C5 1 10 7 15 4 C20 1 25 7 30 4 C35 1 38 4 40 3' fill='none' stroke='%237ec8e3' stroke-opacity='0.5' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 40px 8px;
+  background-repeat: repeat-x;
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .botAvatar {
@@ -167,20 +198,20 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 12px;
+  border-radius: 50%;
   color: #fff;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  background: linear-gradient(135deg, var(--brand-500), var(--brand-800));
-  box-shadow: 0 6px 14px rgba(109, 40, 217, 0.22);
+  background: linear-gradient(150deg, #8fd0e5, #35779c);
+  box-shadow: 0 6px 14px rgba(51, 71, 91, 0.14);
   flex-shrink: 0;
 }
 
 .chatTitle {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .chatTitle strong {
@@ -193,35 +224,37 @@
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  color: var(--muted);
+  color: var(--ink-light);
 }
 
 .onlineDot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(95, 184, 154, 0.18);
 }
 
 .chatHeaderActions {
   margin-left: auto;
 }
 
+/* 对话窗口：极浅水色 + 隐约水纹 */
 .chatWindow {
   flex: 1;
-  padding: 20px 18px;
+  padding: 22px 20px 26px;
   overflow-y: auto;
   background:
-    radial-gradient(620px 320px at 100% 0%, rgba(196, 181, 253, 0.18), transparent 60%),
-    #faf9ff;
+    radial-gradient(520px 300px at 100% 0%, rgba(126, 200, 227, 0.16), transparent 62%),
+    radial-gradient(460px 280px at 0% 100%, rgba(95, 184, 154, 0.08), transparent 66%),
+    #fbfeff;
   scroll-behavior: smooth;
 }
 
 .messageRow {
   display: flex;
-  gap: 9px;
-  margin-bottom: 15px;
+  gap: 10px;
+  margin-bottom: 18px;
   align-items: flex-start;
 }
 
@@ -234,61 +267,75 @@
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: 50%;
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 800;
 }
 
 .avatar.bot {
-  background: var(--brand-100);
-  color: var(--brand-700);
+  background: rgba(126, 200, 227, 0.24);
+  border: 1px solid rgba(126, 200, 227, 0.5);
+  color: var(--primary-ink);
 }
 
 .avatar.user {
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  color: #fff;
-}
-
-.bubble {
-  max-width: 78%;
-  padding: 11px 14px;
-  border-radius: 14px;
-  font-size: 13.5px;
-  line-height: 1.72;
-  word-break: break-word;
-}
-
-.bubble.user {
-  background: linear-gradient(135deg, var(--brand-600), var(--brand-800));
-  color: #fff;
-  border-bottom-right-radius: 4px;
-  white-space: pre-wrap;
-  box-shadow: 0 6px 14px rgba(109, 40, 217, 0.18);
-}
-
-.bubble.bot {
   background: #fff;
-  color: var(--text);
   border: 1px solid var(--line);
-  border-bottom-left-radius: 4px;
-  box-shadow: var(--shadow-xs);
+  color: var(--text-soft);
+}
+
+/* ---- 海浪气泡 ----
+   上缘平直、下缘缓和波浪：用 SVG 遮罩裁出形状 */
+.bubble {
+  position: relative;
+  max-width: 78%;
+  padding: 13px 17px 17px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  line-height: 1.78;
+  word-break: break-word;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H100 V82 C94 96 86 100 78 92 C70 84 62 98 52 92 C42 86 34 100 24 92 C14 84 8 94 0 86 Z' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H100 V82 C94 96 86 100 78 92 C70 84 62 98 52 92 C42 86 34 100 24 92 C14 84 8 94 0 86 Z' fill='%23000'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* AI：浅蓝水彩底，底部用涟漪圆点当“尾巴” */
+.bubble.bot {
+  background:
+    radial-gradient(circle at 9% 88%, rgba(126, 200, 227, 0.55) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 15% 91%, rgba(126, 200, 227, 0.4) 0 1.2px, transparent 2.2px),
+    radial-gradient(220px 120px at 0% 0%, rgba(126, 200, 227, 0.26), transparent 68%),
+    radial-gradient(180px 120px at 100% 0%, rgba(95, 184, 154, 0.12), transparent 70%),
+    #f2fafd;
+  color: var(--text);
+}
+
+/* 用户：白底细描边，靠右 */
+.bubble.user {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  color: var(--text);
+  white-space: pre-wrap;
+  box-shadow: 0 6px 16px rgba(51, 71, 91, 0.06);
 }
 
 .bubble.bot.error {
   background: var(--danger-soft);
-  border-color: var(--danger-line);
   color: var(--danger-text);
 }
 
 .bubble .markdown-body {
   font-size: 13.5px;
-  line-height: 1.75;
+  line-height: 1.78;
   color: inherit;
 }
 
 .bubble .markdown-body p {
-  margin: 0 0 7px;
+  margin: 0 0 8px;
 }
 
 .bubble .markdown-body p:last-child {
@@ -297,6 +344,7 @@
 
 .bubble .markdown-body pre {
   font-size: 12.5px;
+  background: #f4fbfe;
 }
 
 .sources {
@@ -304,20 +352,20 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 9px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--line);
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(201, 223, 232, 0.8);
   font-size: 11.5px;
-  color: var(--muted);
+  color: var(--ink-light);
 }
 
 .sourceChip {
   display: inline-block;
-  padding: 2px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   border: 1px solid var(--brand-200);
-  background: var(--brand-50);
-  color: var(--brand-700);
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--primary-ink);
   text-decoration: none;
   font-weight: 600;
 }
@@ -329,26 +377,25 @@
 .typingRow {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .typingIndicator {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  border-bottom-left-radius: 4px;
-  background: #fff;
-  border: 1px solid var(--line);
+  gap: 5px;
+  padding: 11px 16px;
+  border-radius: 18px;
+  background: #f2fafd;
+  border: 1px solid var(--brand-200);
 }
 
 .typingIndicator span {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--brand-400);
+  background: var(--brand-500);
   animation: bob 1.3s infinite ease-in-out;
 }
 
@@ -374,30 +421,31 @@
 
 .typingLabel {
   font-size: 11.5px;
-  color: var(--muted);
+  color: var(--ink-light);
 }
 
+/* 输入区：独立分隔，白底 */
 .composer {
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  padding: 12px 14px 13px;
+  padding: 13px 15px 14px;
   border-top: 1px solid var(--line);
   background: #fff;
 }
 
 .inputBox {
   flex: 1;
-  border: 1px solid var(--line-strong);
-  border-radius: 13px;
-  background: #fbfaff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fbfdfe;
   transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
 .inputBox:focus-within {
-  border-color: var(--brand-400);
+  border-color: var(--brand-500);
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(126, 200, 227, 0.18);
 }
 
 .composerInput {
@@ -405,18 +453,18 @@
   width: 100%;
   min-height: 42px;
   max-height: 132px;
-  padding: 11px 13px 4px;
+  padding: 12px 14px 4px;
   border: none;
   background: transparent;
   color: var(--text);
   font-size: 13.5px;
-  line-height: 1.65;
+  line-height: 1.7;
   resize: none;
   outline: none;
 }
 
 .composerInput::placeholder {
-  color: #a6a3b8;
+  color: var(--ink-light);
 }
 
 .inputMeta {
@@ -424,9 +472,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 12px 7px;
+  padding: 0 13px 8px;
   font-size: 10.5px;
-  color: #9aa0b2;
+  color: var(--ink-light);
 }
 
 .sendBtn {
@@ -434,20 +482,21 @@
   align-items: center;
   gap: 6px;
   height: 46px;
-  padding: 0 19px;
-  border-radius: 11px;
+  padding: 0 20px;
+  border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  background: #35779c;
   color: #fff;
   font-size: 13.5px;
   font-weight: 750;
-  box-shadow: 0 7px 16px rgba(109, 40, 217, 0.24);
-  transition: transform 0.16s ease, opacity 0.16s ease;
+  box-shadow: 0 7px 16px rgba(51, 71, 91, 0.14);
+  transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease;
   flex-shrink: 0;
 }
 
 .sendBtn:hover:not(:disabled) {
   transform: translateY(-1px);
+  box-shadow: 0 9px 20px rgba(51, 71, 91, 0.18), 0 0 0 5px rgba(126, 200, 227, 0.2);
 }
 
 .sendBtn:disabled {

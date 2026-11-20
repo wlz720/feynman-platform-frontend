@@ -154,7 +154,7 @@ function AgentPage() {
             ) : (
               <p className="suggestionEmpty">
                 还没有可推荐的问题。先
-                <Link to="/kp/new" style={{ color: 'var(--brand-700)', fontWeight: 700 }}>
+                <Link to="/kp/new" style={{ color: 'var(--primary-ink)', fontWeight: 700 }}>
                   {' '}
                   新建一个知识点{' '}
                 </Link>

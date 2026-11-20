@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../api/axios';
 import { Link, useNavigate } from 'react-router-dom';
 import MarkdownContent from '../components/MarkdownContent';
+import { WindChime, Goldfish } from '../components/SummerDecor';
 import { STATUS_LABELS } from '../utils/kpStatus';
 import styles from './DashboardPage.module.css';
 
@@ -167,6 +168,9 @@ function DashboardPage() {
   return (
     <div className="page">
       <section className={styles.hero}>
+        {/* 夏日点缀：风铃 + 金鱼，各一处，低透明度不抢内容 */}
+        <WindChime className={styles.heroChime} />
+        <Goldfish className={styles.heroFish} flip />
         <div className={styles.heroCopy}>
           <span className={styles.heroEyebrow}>LEARNING DASHBOARD</span>
           <h1 className={styles.heroTitle}>我的知识点</h1>

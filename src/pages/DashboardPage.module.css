@@ -1,4 +1,4 @@
-/* 主页专用样式：顶部 Hero + 知识点卡片网格 */
+/* 主页：Hero 浅蓝水彩 + 白留白 + 杂志化数据排版 */
 
 .hero {
   position: relative;
@@ -6,36 +6,39 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 28px;
+  gap: 32px;
   flex-wrap: wrap;
-  padding: 32px 34px;
+  padding: 38px 36px 34px;
   margin-bottom: 18px;
   border-radius: 26px;
-  color: #fff;
+  border: 1px solid var(--line);
+  color: var(--ink);
   background:
-    radial-gradient(560px 320px at 92% -10%, rgba(147, 197, 253, 0.4), transparent 62%),
-    radial-gradient(480px 320px at 6% 110%, rgba(244, 114, 182, 0.32), transparent 60%),
-    linear-gradient(135deg, #2e1065 0%, #5b21b6 52%, #7c3aed 100%);
-  box-shadow: 0 26px 55px rgba(59, 7, 100, 0.26);
+    radial-gradient(460px 300px at 6% -16%, rgba(126, 200, 227, 0.5), transparent 66%),
+    radial-gradient(380px 260px at 92% 4%, rgba(95, 184, 154, 0.24), transparent 64%),
+    radial-gradient(320px 220px at 56% 118%, rgba(232, 200, 122, 0.18), transparent 72%),
+    #fdfefe;
+  box-shadow: 0 14px 34px rgba(51, 71, 91, 0.06);
 }
 
+/* 底部一条海浪细线，替代原来的大圆环装饰 */
 .hero::after {
   content: "";
   position: absolute;
-  right: 34%;
-  bottom: -140px;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  background:
+    radial-gradient(120px 26px at 12% 100%, rgba(126, 200, 227, 0.35), transparent 70%),
+    radial-gradient(160px 30px at 62% 100%, rgba(95, 184, 154, 0.22), transparent 72%);
   pointer-events: none;
 }
 
 .heroCopy {
   position: relative;
-  z-index: 1;
-  flex: 1 1 420px;
+  z-index: 2;
+  flex: 1 1 400px;
 }
 
 .heroEyebrow {
@@ -44,8 +47,8 @@
   gap: 8px;
   font-size: 10.5px;
   font-weight: 750;
-  letter-spacing: 0.16em;
-  color: rgba(255, 255, 255, 0.66);
+  letter-spacing: 0.18em;
+  color: var(--primary-deep);
 }
 
 .heroEyebrow::before {
@@ -53,23 +56,26 @@
   width: 18px;
   height: 2px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--primary);
 }
 
+/* 衬线标题做杂志感，正文仍用无衬线保证易读 */
 .heroTitle {
-  margin: 10px 0 8px;
-  font-size: clamp(28px, 3.8vw, 40px);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  font-weight: 800;
+  margin: 12px 0 10px;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.16;
+  letter-spacing: 0.01em;
+  font-weight: 700;
+  color: var(--brand-900);
 }
 
 .heroSub {
   margin: 0;
   max-width: 520px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-soft);
   font-size: 13.5px;
-  line-height: 1.8;
+  line-height: 1.85;
 }
 
 .heroActions {
@@ -83,56 +89,59 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 11px 18px;
-  border-radius: 11px;
-  border: 1px solid transparent;
-  background: #fff;
-  color: var(--brand-800);
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: 1px solid #2f6a8c;
+  background: #35779c;
+  color: #fff;
   font-size: 13.5px;
-  font-weight: 750;
+  font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 10px 24px rgba(15, 8, 40, 0.2);
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  box-shadow: 0 8px 18px rgba(51, 71, 91, 0.14);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .btnHero:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(15, 8, 40, 0.26);
+  background: #2f6a8c;
+  box-shadow: 0 10px 22px rgba(51, 71, 91, 0.18), 0 0 0 5px rgba(126, 200, 227, 0.2);
 }
 
 .btnHeroGhost {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 11px 18px;
-  border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--primary-ink);
   font-size: 13.5px;
   font-weight: 650;
   text-decoration: none;
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btnHeroGhost:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.42);
+  background: #fff;
+  border-color: var(--brand-300);
+  box-shadow: 0 0 0 5px rgba(126, 200, 227, 0.14);
 }
 
+/* ---- 右侧数据面板：白底细描边，数字用深海蓝做大字号 ---- */
 .heroMetrics {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 13px;
-  min-width: 292px;
-  padding: 18px 24px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
+  gap: 15px;
+  min-width: 300px;
+  padding: 20px 24px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 26px rgba(51, 71, 91, 0.06);
 }
 
 .heroMetricRow {
@@ -144,48 +153,52 @@
 .heroMetric {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
   min-width: 72px;
 }
 
 .heroMetricValue {
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--primary-ink);
   font-variant-numeric: tabular-nums;
 }
 
 .heroMetricUnit {
   margin-left: 2px;
-  font-size: 15px;
+  font-family: var(--font-sans);
+  font-size: 14px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--ink-light);
 }
 
 .heroMetricLabel {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.66);
+  letter-spacing: 0.04em;
+  color: var(--ink-light);
   white-space: nowrap;
 }
 
 .heroMetricDivider {
   width: 1px;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.22);
+  height: 36px;
+  background: var(--line);
 }
 
 .heroProgress {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .heroProgressTrack {
-  height: 5px;
+  height: 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
+  background: #e9f5f9;
   overflow: hidden;
 }
 
@@ -193,17 +206,54 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #c4b5fd, #67e8f9);
-  box-shadow: 0 0 14px rgba(196, 181, 253, 0.65);
-  transition: width 0.3s ease;
+  background: linear-gradient(180deg, #9adcff, #5aa8c9);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20' preserveAspectRatio='none'%3E%3Cpath d='M0 5 C5 0 10 10 15 5 C20 0 25 10 30 5 C35 0 38 4 40 4 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20' preserveAspectRatio='none'%3E%3Cpath d='M0 5 C5 0 10 10 15 5 C20 0 25 10 30 5 C35 0 38 4 40 4 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E");
+  -webkit-mask-size: 40px 100%;
+  mask-size: 40px 100%;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  transition: width 0.35s ease;
 }
 
 .heroProgressLabel {
-  font-size: 10.5px;
-  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  color: var(--ink-light);
   font-variant-numeric: tabular-nums;
 }
 
+/* hero 装饰：风铃挂在 hero 上缘、卡片左侧的空处；金鱼贴着水线游 */
+.hero .heroChime {
+  position: absolute;
+  top: -2px;
+  left: 42%;
+  z-index: 1;
+  width: 44px;
+  opacity: 0.8;
+}
+
+.hero .heroFish {
+  position: absolute;
+  right: 44px;
+  bottom: 2px;
+  width: 92px;
+  height: auto;
+  z-index: 1;
+  opacity: 0.5;
+  animation: fish-drift 9s ease-in-out infinite;
+}
+
+@keyframes fish-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-2deg);
+  }
+  50% {
+    transform: translate(-10px, -6px) rotate(2deg);
+  }
+}
+
+/* ---- 知识点卡片网格 ---- */
 .kpGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
@@ -214,34 +264,34 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 19px 20px 16px;
+  padding: 20px 21px 16px;
   border-radius: 18px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.94);
+  background: #fff;
   box-shadow: var(--shadow-xs);
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .kpCard:hover {
   transform: translateY(-3px);
-  border-color: var(--brand-200);
-  box-shadow: var(--shadow-md);
+  border-color: var(--brand-300);
+  box-shadow: 0 14px 30px rgba(51, 71, 91, 0.09);
 }
 
 .kpCard.review {
-  border-color: #fcd9a6;
+  border-color: #f4d2c4;
 }
 
 .kpCard.review::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 18px;
-  bottom: 18px;
+  top: 20px;
+  bottom: 20px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, #fbbf24, #f59e0b);
+  background: var(--accent-coral);
 }
 
 .kpTop {
@@ -249,19 +299,19 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: 11px;
 }
 
 .kpDate {
   margin-left: auto;
   font-size: 11.5px;
-  color: #9aa0b2;
+  color: var(--ink-light);
 }
 
 .kpTitle {
   margin: 0 0 10px;
   font-size: 19px;
-  line-height: 1.4;
+  line-height: 1.45;
   font-weight: 750;
   color: var(--brand-900);
   display: -webkit-box;
@@ -276,7 +326,7 @@
   max-height: 128px;
   overflow: hidden;
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--text-soft);
   -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
   mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
@@ -284,7 +334,7 @@
 
 .kpPreview :global(.markdown-body) {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .kpPreview :global(.markdown-body h1),
@@ -303,16 +353,16 @@
   flex-wrap: wrap;
   margin-top: 15px;
   padding-top: 13px;
-  border-top: 1px dashed var(--line);
+  border-top: 1px solid var(--line);
 }
 
 .action {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 11px;
-  border-radius: 8px;
-  border: 1px solid var(--line-strong);
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
   background: #fff;
   color: var(--text-soft);
   font-size: 12.5px;
@@ -324,40 +374,43 @@
 .action:hover {
   border-color: var(--brand-300);
   background: var(--brand-50);
-  color: var(--brand-700);
+  color: var(--primary-ink);
 }
 
+/* 复述 = 海沫绿；测评 = 海水蓝 */
 .actionRecord {
   border-color: transparent;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: #3f9c81;
   color: #fff;
-  box-shadow: 0 5px 12px rgba(5, 150, 105, 0.2);
+  box-shadow: 0 5px 12px rgba(51, 71, 91, 0.1);
 }
 
 .actionRecord:hover {
-  background: linear-gradient(135deg, #34d399, #059669);
+  background: #368b72;
   color: #fff;
   border-color: transparent;
+  box-shadow: 0 6px 14px rgba(51, 71, 91, 0.13), 0 0 0 4px rgba(95, 184, 154, 0.18);
 }
 
 .actionQuiz {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  background: #35779c;
   color: #fff;
-  box-shadow: 0 5px 12px rgba(109, 40, 217, 0.2);
+  box-shadow: 0 5px 12px rgba(51, 71, 91, 0.1);
 }
 
 .actionQuiz:hover {
-  background: linear-gradient(135deg, var(--brand-400), var(--brand-700));
+  background: #2f6a8c;
   color: #fff;
   border-color: transparent;
+  box-shadow: 0 6px 14px rgba(51, 71, 91, 0.13), 0 0 0 4px rgba(126, 200, 227, 0.18);
 }
 
 .actionDelete {
   margin-left: auto;
   border-color: transparent;
   background: transparent;
-  color: #9aa0b2;
+  color: var(--ink-light);
 }
 
 .actionDelete:hover {
@@ -391,36 +444,38 @@
 
 .filterCount {
   font-size: 12.5px;
-  color: var(--muted);
+  color: var(--ink-light);
   white-space: nowrap;
 }
 
+/* ---- 下一步复习：全屏唯一暖色，珊瑚橘点缀 ---- */
 .focusBar {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
   margin-bottom: 18px;
-  padding: 15px 18px;
-  border-radius: 16px;
-  border: 1px solid #ddd6fe;
+  padding: 16px 20px;
+  border-radius: 18px;
+  border: 1px solid #f2d8cd;
   background:
-    radial-gradient(380px 120px at 0% 0%, rgba(251, 191, 36, 0.09), transparent 70%),
-    linear-gradient(135deg, #fbf8ff, #f3efff 70%, #eff6ff);
-  box-shadow: var(--shadow-xs);
+    radial-gradient(300px 120px at 4% 0%, rgba(242, 166, 141, 0.16), transparent 72%),
+    #fffdfb;
+  box-shadow: 0 8px 20px rgba(51, 71, 91, 0.05);
 }
 
 .focusIcon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #fff;
-  font-size: 20px;
+  border-radius: 50%;
+  background: rgba(242, 166, 141, 0.2);
+  border: 1px solid rgba(242, 166, 141, 0.55);
+  color: #b4552f;
+  font-size: 19px;
   font-weight: 800;
-  box-shadow: 0 7px 16px rgba(245, 158, 11, 0.28);
 }
 
 .focusCopy {
@@ -430,25 +485,25 @@
 
 .focusEyebrow {
   display: block;
-  margin-bottom: 2px;
-  color: #8b5cf6;
+  margin-bottom: 3px;
+  color: #b4552f;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
 }
 
 .focusTitle {
   display: block;
-  color: #3b236c;
+  color: var(--brand-900);
   font-size: 14.5px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .focusText {
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   color: var(--text-soft);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.65;
 }
 
 .focusAction {
@@ -456,22 +511,24 @@
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  padding: 9px 15px;
-  border-radius: 10px;
-  background: var(--brand-600);
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: #35779c;
   color: #fff;
   font-size: 12.5px;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 8px 18px rgba(109, 40, 217, 0.24);
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  box-shadow: 0 8px 18px rgba(51, 71, 91, 0.13);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
 .focusAction:hover {
   transform: translateY(-1px);
-  box-shadow: 0 11px 24px rgba(109, 40, 217, 0.3);
+  background: #2f6a8c;
+  box-shadow: 0 10px 24px rgba(51, 71, 91, 0.17), 0 0 0 5px rgba(242, 166, 141, 0.18);
 }
 
+/* ---- 四张统计卡：白底 + 状态色细下划线 ---- */
 .statHead {
   display: flex;
   align-items: center;
@@ -483,37 +540,37 @@
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
-  font-size: 14px;
+  border-radius: 50%;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1;
 }
 
 .statIconReview {
-  background: #fff7ed;
-  color: #d97706;
+  background: rgba(242, 166, 141, 0.18);
+  color: #a8492c;
 }
 
 .statIconIdle {
-  background: #f1f5f9;
-  color: #64748b;
+  background: rgba(159, 185, 201, 0.22);
+  color: #4e6e80;
 }
 
 .statIconScore {
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: rgba(126, 200, 227, 0.2);
+  color: var(--primary-ink);
 }
 
 .statIconTop {
-  background: #ecfdf5;
-  color: #059669;
+  background: rgba(95, 184, 154, 0.2);
+  color: var(--success-text);
 }
 
 .statMeter {
-  height: 5px;
-  margin-top: 11px;
+  height: 6px;
+  margin-top: 12px;
   border-radius: 999px;
-  background: #f1f1f7;
+  background: #eff7fa;
   overflow: hidden;
 }
 
@@ -521,36 +578,46 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width 0.35s ease;
 }
 
 .meterWarm {
-  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  background: var(--accent-coral);
 }
 
 .meterCool {
-  background: linear-gradient(90deg, #cbd5e1, #94a3b8);
+  background: #9fb9c9;
 }
 
 .meterBrand {
-  background: linear-gradient(90deg, #a78bfa, #7c3aed);
+  background: var(--brand-500);
 }
 
 .meterGreen {
-  background: linear-gradient(90deg, #34d399, #059669);
+  background: var(--success);
 }
 
 .statHint {
-  margin: 7px 0 0;
-  color: #98a0b3;
+  margin: 8px 0 0;
+  color: var(--ink-light);
   font-size: 10.5px;
-  line-height: 1.45;
+  line-height: 1.55;
 }
-
 
 @media (max-width: 760px) {
   .hero {
-    padding: 24px 22px;
+    padding: 26px 22px;
+  }
+
+  .hero .heroChime {
+    display: none;
+  }
+
+  .hero .heroFish {
+    width: 62px;
+    right: 12px;
+    bottom: 6px;
+    opacity: 0.42;
   }
 
   .heroMetrics {
