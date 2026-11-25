@@ -15,6 +15,8 @@ function AgentPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [kpCount, setKpCount] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+  const [syncing, setSyncing] = useState(false);
+  const [syncInfo, setSyncInfo] = useState('');
   const chatWindowRef = useRef(null);
 
   useEffect(() => {
@@ -47,22 +49,31 @@ function AgentPage() {
     };
   }, []);
 
+  // 带上最近几轮对话历史，让模型能理解“它 / 这个概念”这类指代；报错气泡不纳入历史
+  const buildHistory = (list) =>
+    list
+      .filter((m) => m.sender && !m.isError && typeof m.text === 'string' && m.text.trim())
+      .slice(-6)
+      .map((m) => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text.trim() }));
+
   const sendMessage = async (text) => {
     const question = text.trim();
     if (!question || isLoading) return;
 
+    const history = buildHistory(messages);
     setMessages((prev) => [...prev, { sender: 'user', text: question }]);
     setInputValue('');
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post('/ai/rag-qa', { question });
+      const response = await apiClient.post('/ai/rag-qa', { question, history });
       setMessages((prev) => [
         ...prev,
         {
           sender: 'bot',
           text: response.data.answer,
           sources: response.data.sources || [],
+          mode: response.data.mode || 'rag',
         },
       ]);
     } catch (error) {
@@ -77,6 +88,21 @@ function AgentPage() {
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 重建当前用户的向量索引：修复保存时向量化失败导致笔记检索不到的问题
+  const handleSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncInfo('');
+    try {
+      const res = await apiClient.post('/ai/reindex');
+      setSyncInfo(`已同步 ${res.data.indexed} 个知识点，共 ${res.data.chunks} 个片段可检索`);
+    } catch (error) {
+      setSyncInfo(error.response?.data?.msg || '同步失败，请确认后端已启动后重试');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -99,7 +125,7 @@ function AgentPage() {
           <span className="eyebrow">RAG ASSISTANT</span>
           <h1 className="page-title">AI 助手</h1>
           <p className="page-subtitle">
-            基于你全部知识点的检索增强问答：先检索、后回答，答不上来会直说，不编造。
+            先检索你的笔记作答并附上来源；笔记里没有的问题，会标注后用通用知识回答。
           </p>
         </div>
         <span className="badge badge-brand">私有知识库 · RAG</span>
@@ -119,7 +145,7 @@ function AgentPage() {
               <li className="step">
                 <span className="stepNum">2</span>
                 <span className="stepText">
-                  只根据检索到的内容<strong>组织回答</strong>。
+                  命中笔记就<strong>依据笔记组织回答</strong>；未命中会标注后用通用知识作答。
                 </span>
               </li>
               <li className="step">
@@ -133,6 +159,19 @@ function AgentPage() {
               <span className="kbCount">{kpCount === null ? '—' : kpCount}</span>
               <span className="kbLabel">个知识点可供检索</span>
             </div>
+            <button
+              type="button"
+              className="syncBtn"
+              onClick={handleSync}
+              disabled={syncing}
+            >
+              {syncing ? '正在同步笔记…' : '🔄 同步我的笔记到知识库'}
+            </button>
+            {syncInfo && (
+              <p className="syncInfo" role="status">
+                {syncInfo}
+              </p>
+            )}
           </div>
 
           <div className="suggestionPanel">
@@ -207,6 +246,9 @@ function AgentPage() {
                     <MarkdownContent>{msg.text}</MarkdownContent>
                   ) : (
                     msg.text
+                  )}
+                  {msg.mode === 'general' && !msg.isError && (
+                    <div className="modeNote">未在你的笔记中检索到相关内容，以下为通用解答</div>
                   )}
                   {msg.sources?.length > 0 && (
                     <div className="sources">

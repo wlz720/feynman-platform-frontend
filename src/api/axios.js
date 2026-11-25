@@ -21,4 +21,20 @@ apiClient.interceptors.request.use(
   }
 );
 
+// 响应拦截器：Token 过期或无效（401）时清理登录态并回到登录页，避免停在空白报错页
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    if (status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (!/^\/login/.test(window.location.pathname)) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;

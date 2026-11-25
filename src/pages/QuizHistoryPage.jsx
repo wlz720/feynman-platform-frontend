@@ -10,6 +10,9 @@ const TYPE_LABELS = {
 };
 
 const DIFFICULTY_LABELS = {
+  基础: '基础',
+  中等: '中等',
+  困难: '困难',
   easy: '简单',
   medium: '中等',
   hard: '困难',

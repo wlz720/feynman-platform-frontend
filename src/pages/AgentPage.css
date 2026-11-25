@@ -98,6 +98,37 @@
   color: var(--ink-light);
 }
 
+.syncBtn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--brand-50);
+  color: var(--primary-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.syncBtn:hover:not(:disabled) {
+  background: var(--brand-100);
+}
+
+.syncBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.syncInfo {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-light);
+  line-height: 1.6;
+}
+
 .suggestionPanel {
   padding: 19px;
   border-radius: 18px;
@@ -355,6 +386,12 @@
   margin-top: 10px;
   padding-top: 9px;
   border-top: 1px solid rgba(201, 223, 232, 0.8);
+  font-size: 11.5px;
+  color: var(--ink-light);
+}
+
+.modeNote {
+  margin-top: 8px;
   font-size: 11.5px;
   color: var(--ink-light);
 }
