@@ -10,6 +10,7 @@ import {
   forceLink
 } from 'd3-force-3d';
 import apiClient from '../api/axios';
+import { useStageFullscreen } from '../hooks/useStageFullscreen';
 import {
   createGlowTexture,
   createGlowSprite,
@@ -54,6 +55,7 @@ function nodeStatusLabel(node) {
 
 function KnowledgeUniversePage() {
   const mountRef = useRef(null);
+  const { stageRef, isFullscreen, toggle, fsClassName } = useStageFullscreen();
   const navigate = useNavigate();
   // navigate 通过 ref 透传：路由对象不进 3D useEffect 依赖，避免重建整个场景；
   // ref 写入放在 effect 里（渲染期间写 ref 违反 React 规范，lint 会告警）
@@ -580,7 +582,7 @@ function KnowledgeUniversePage() {
       )}
 
       {hasNodes && (
-        <div className={styles.universeCard}>
+        <div ref={stageRef} className={`${styles.universeCard} ${fsClassName}`}>
           <div className={styles.stageHead}>
             <div className={styles.stageTitle}>
               <strong>知识星系</strong>
@@ -590,6 +592,9 @@ function KnowledgeUniversePage() {
               <span className={styles.stageBadge}>🪐 点击星球查看摘要</span>
               <span className={styles.stageBadge}>✦ {data.nodes.length} 星球</span>
               <span className={styles.stageBadge}>↗ {data.links.length} 航线</span>
+              <button type="button" className="fs-toggle fs-toggle-dark" onClick={toggle}>
+                {isFullscreen ? '⤢ 退出全屏' : '⛶ 全屏适配'}
+              </button>
             </div>
           </div>
           <div className={styles.canvasWrap}>

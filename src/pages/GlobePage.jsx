@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/axios';
+import { useStageFullscreen } from '../hooks/useStageFullscreen';
 import styles from './GlobePage.module.css';
 
 /**
@@ -81,6 +82,9 @@ export default function GlobePage() {
   const navigate = useNavigate();
   const mountRef = useRef(null);
   const tooltipRef = useRef(null);
+  const viewerRef = useRef(null);
+  const cesiumRef = useRef(null);
+  const { stageRef, isFullscreen, toggle, fsClassName } = useStageFullscreen();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [counts, setCounts] = useState({ total: 0, mastered: 0, needReview: 0 });
@@ -98,8 +102,10 @@ export default function GlobePage() {
     let disposed = false;
     let viewer = null;
     let handler = null;
+    let handleResize = null;
     let removeRotate = null;
     let resumeTimer = null;
+    let kickTimers = [];
 
     const init = async () => {
       /* Cesium 静态资源（Workers/Assets/Widgets）由 vite 复制到 /cesium/ */
@@ -138,7 +144,7 @@ export default function GlobePage() {
         requestRenderMode: false
       });
       viewer.scene.globe.enableLighting = true;
-      viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0b1026');
+      viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#1b4a68');
       viewer.scene.skyAtmosphere.brightnessShift = 0.1;
       viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#05060f');
 
@@ -211,13 +217,39 @@ export default function GlobePage() {
         needReview: nodes.filter((n) => getStatus(n) === 'need_review').length
       });
 
+      /* 全屏适配 / 窗口变化时让 Cesium 重算画布尺寸与相机宽高比 */
+      handleResize = () => {
+        if (viewer && !viewer.isDestroyed()) {
+          const w = mount.clientWidth || 1;
+          const h = mount.clientHeight || 1;
+          viewer.scene.camera.frustum.aspectRatio = w / h;
+          if (typeof viewer.resize === 'function') viewer.resize();
+        }
+      };
+      window.addEventListener('resize', handleResize);
+
       /* 初始视角：面向中国上空 */
       viewer.camera.setView({
         destination: Cesium.Cartesian3.fromDegrees(105, 28, 2.4e7)
       });
 
+      /* 部分嵌入 / 软件渲染环境首帧不绘制球体，延迟补两次 resize + 视角重置，强制重绘 */
+      const kick = () => {
+        if (disposed || !viewer || viewer.isDestroyed()) return;
+        handleResize();
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(105, 28, 2.4e7)
+        });
+      };
+      const kickTimer = setTimeout(kick, 300);
+      const kickTimer2 = setTimeout(kick, 900);
+      const kickTimer3 = setTimeout(kick, 1600);
+      kickTimers = [kickTimer, kickTimer2, kickTimer3];
+
       /* 开发环境挂一个调试句柄，方便控制台排查渲染问题（生产构建会剔除） */
       if (import.meta.env.DEV) window.__globe = { viewer, Cesium };
+      viewerRef.current = viewer;
+      cesiumRef.current = Cesium;
 
       /* 自转：绕地轴缓慢旋转，交互时暂停 3 秒 */
       let interacting = false;
@@ -281,11 +313,30 @@ export default function GlobePage() {
     return () => {
       disposed = true;
       clearTimeout(resumeTimer);
+      kickTimers.forEach(clearTimeout);
       removeRotate?.();
       handler?.destroy();
+      if (handleResize) window.removeEventListener('resize', handleResize);
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
+      viewerRef.current = null;
+      cesiumRef.current = null;
     };
   }, [navigate, isDesktopFile]);
+
+  // 进入全屏适配后，按新宽高比重置初始视角，避免相机朝向 / 取景错位
+  useEffect(() => {
+    if (!isFullscreen) return undefined;
+    const timer = setTimeout(() => {
+      const viewer = viewerRef.current;
+      const Cesium = cesiumRef.current;
+      if (viewer && Cesium && !viewer.isDestroyed()) {
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(105, 28, 2.4e7)
+        });
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [isFullscreen]);
 
   return (
     <div className="page">
@@ -313,7 +364,7 @@ export default function GlobePage() {
         </div>
       </div>
 
-      <div className={styles.stageCard}>
+      <div ref={stageRef} className={`${styles.stageCard} ${fsClassName}`}>
         {isDesktopFile ? (
           <div className={styles.notice}>
             <p>桌面端（Electron）暂不支持 3D 地球渲染。</p>
@@ -323,6 +374,13 @@ export default function GlobePage() {
           <>
             <div ref={mountRef} className={styles.stage} />
             <div ref={tooltipRef} className={styles.tooltip} />
+            <button
+              type="button"
+              className={`fs-toggle fs-toggle-dark ${styles.fsBtn}`}
+              onClick={toggle}
+            >
+              {isFullscreen ? '⤢ 退出全屏' : '⛶ 全屏适配'}
+            </button>
             {loading && <div className={styles.notice}>正在点亮你的知识地球…</div>}
             {error && <div className={styles.notice}>{error}</div>}
             {!loading && !error && (

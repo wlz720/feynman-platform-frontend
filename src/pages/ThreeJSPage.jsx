@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import apiClient from '../api/axios';
+import { useStageFullscreen } from '../hooks/useStageFullscreen';
 import {
   createGlowTexture,
   createGlowSprite,
@@ -37,6 +38,7 @@ function statusColor(node) {
 
 function ThreeJSPage() {
   const mountRef = useRef(null);
+  const { stageRef, isFullscreen, toggle, fsClassName } = useStageFullscreen();
   const [mode, setMode] = useState('graph');
   const [graphData, setGraphData] = useState(null);
   const [error, setError] = useState('');
@@ -509,7 +511,7 @@ function ThreeJSPage() {
           </p>
         </div>
       ) : (
-        <div className={styles.stageCard}>
+        <div ref={stageRef} className={`${styles.stageCard} ${fsClassName}`}>
           <div className={styles.stageHead}>
             <div className={styles.stageTitle}>
               <strong>{showGraph ? '知识宇宙' : 'Hello 3D World'}</strong>
@@ -519,9 +521,14 @@ function ThreeJSPage() {
                   : '场景 / 相机 / 渲染器 · 霓虹立方体'}
               </span>
             </div>
-            <span className={styles.stageBadge}>
-              {showGraph ? '🪐 悬停高亮 · 点击进入' : '🖱 拖拽旋转 · 滚轮缩放'}
-            </span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <span className={styles.stageBadge}>
+                {showGraph ? '🪐 悬停高亮 · 点击进入' : '🖱 拖拽旋转 · 滚轮缩放'}
+              </span>
+              <button type="button" className="fs-toggle fs-toggle-dark" onClick={toggle}>
+                {isFullscreen ? '⤢ 退出全屏' : '⛶ 全屏适配'}
+              </button>
+            </div>
           </div>
           <div className={styles.canvasWrap}>
             <div ref={mountRef} className={styles.canvas} />

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import ReactEChartsCore from 'echarts-for-react/lib/core';
 import * as echarts from 'echarts/core';
 import { GraphChart } from 'echarts/charts';
 import { TooltipComponent, LegendComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import apiClient from '../api/axios';
+import { useStageFullscreen } from '../hooks/useStageFullscreen';
 import styles from './GraphPage.module.css';
 
 echarts.use([GraphChart, TooltipComponent, LegendComponent, CanvasRenderer]);
@@ -36,6 +36,9 @@ function GraphPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { stageRef, isFullscreen, toggle, fsClassName } = useStageFullscreen();
+  const mountRef = useRef(null);
+  const chartRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,11 +178,46 @@ function GraphPage() {
     [graphData]
   );
 
-  const onChartClick = (params) => {
-    if (params.componentType === 'series' && params.dataType === 'node') {
-      navigate(`/kp/${params.data.id}`);
+  // 直接持有 ECharts 实例初始化（避开 echarts-for-react 在 ECharts 6 下等待 finished 事件不返回的兼容问题）
+  const showChart = !loading && !error && graphData.nodes.length > 0;
+  useEffect(() => {
+    if (!showChart || !mountRef.current) return undefined;
+    const chart = echarts.init(mountRef.current);
+    chartRef.current = chart;
+    if (import.meta.env.DEV) window.__graph = chart;
+
+    chart.on('click', (params) => {
+      if (params.componentType === 'series' && params.dataType === 'node') {
+        navigate(`/kp/${params.data.id}`);
+      }
+    });
+
+    const onResize = () => chart.resize();
+    window.addEventListener('resize', onResize);
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined' && mountRef.current) {
+      ro = new ResizeObserver(onResize);
+      ro.observe(mountRef.current);
     }
-  };
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      ro?.disconnect();
+      chart.dispose();
+      chartRef.current = null;
+    };
+  }, [navigate, showChart]);
+
+  // 数据更新时写入配置
+  useEffect(() => {
+    chartRef.current?.setOption(option, { notMerge: true });
+  }, [option]);
+
+  // 进入/退出全屏适配后显式让 ECharts 按新容器尺寸重排
+  useEffect(() => {
+    const timer = setTimeout(() => chartRef.current?.resize(), 80);
+    return () => clearTimeout(timer);
+  }, [isFullscreen]);
 
   if (loading) {
     return (
@@ -252,21 +290,23 @@ function GraphPage() {
           </div>
         </div>
       ) : (
-        <div className={styles.chartCard}>
+        <div ref={stageRef} className={`${styles.chartCard} ${fsClassName}`}>
           <div className={styles.chartHead}>
             <div className={styles.chartTitle}>
               <strong>引用关系图</strong>
               <span>节点大小与正文长度相关，颜色表示掌握状态</span>
             </div>
-            <span className={styles.chartBadge}>🖱 可拖拽 · 可缩放</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <span className={styles.chartBadge}>🖱 可拖拽 · 可缩放</span>
+              <button type="button" className="fs-toggle" onClick={toggle}>
+                {isFullscreen ? '⤢ 退出全屏' : '⛶ 全屏适配'}
+              </button>
+            </div>
           </div>
           <div className={styles.chartBox}>
-            <ReactEChartsCore
-              echarts={echarts}
-              option={option}
-              notMerge
-              style={{ height: 'clamp(440px, 64vh, 640px)', width: '100%' }}
-              onEvents={{ click: onChartClick }}
+            <div
+              ref={mountRef}
+              style={{ height: isFullscreen ? '100%' : 'clamp(440px, 64vh, 640px)', width: '100%' }}
             />
           </div>
         </div>

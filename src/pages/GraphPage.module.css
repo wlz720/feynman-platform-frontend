@@ -96,3 +96,23 @@
 .emptyCard {
   padding: 20px;
 }
+
+/* 全屏适配：卡片纵向铺满，图谱撑满剩余高度 */
+.chartCard:global(.fs-active) {
+  display: flex;
+  flex-direction: column;
+}
+
+.chartCard:global(.fs-active) .chartHead {
+  flex-shrink: 0;
+}
+
+.chartCard:global(.fs-active) .chartBox {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.chartCard:global(.fs-active) .chartBox > div {
+  height: 100% !important;
+}

@@ -8,6 +8,39 @@
   align-items: start;
 }
 
+/* 桌面端：整页不再上下滚动，只有对话区 / 左栏各自内部滚动，避免想滑对话却带动整页 */
+@media (min-width: 921px) {
+  .page.agentPage {
+    height: calc(100vh - 150px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 24px;
+  }
+
+  .agentPage .page-header {
+    flex-shrink: 0;
+  }
+
+  .agentShell {
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .aside {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+  }
+
+  .chatPanel {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
 .aside {
   display: flex;
   flex-direction: column;
@@ -275,6 +308,7 @@
   flex: 1;
   padding: 22px 20px 26px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background:
     radial-gradient(520px 300px at 100% 0%, rgba(126, 200, 227, 0.16), transparent 62%),
     radial-gradient(460px 280px at 0% 100%, rgba(95, 184, 154, 0.08), transparent 66%),
@@ -321,13 +355,13 @@
 .bubble {
   position: relative;
   max-width: 78%;
-  padding: 13px 17px 17px;
+  padding: 13px 17px 22px;
   border-radius: 20px;
   font-size: 13.5px;
   line-height: 1.78;
   word-break: break-word;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H100 V82 C94 96 86 100 78 92 C70 84 62 98 52 92 C42 86 34 100 24 92 C14 84 8 94 0 86 Z' fill='%23000'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H100 V82 C94 96 86 100 78 92 C70 84 62 98 52 92 C42 86 34 100 24 92 C14 84 8 94 0 86 Z' fill='%23000'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H100 V93 C94 98 86 100 78 95 C70 91 62 100 52 95 C42 91 34 100 24 95 C14 91 8 98 0 94 Z' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H100 V93 C94 98 86 100 78 95 C70 91 62 100 52 95 C42 91 34 100 24 95 C14 91 8 98 0 94 Z' fill='%23000'/%3E%3C/svg%3E");
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
@@ -498,6 +532,16 @@
   line-height: 1.7;
   resize: none;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* 聚焦时不要在文本框上再画一圈默认方框，聚焦态由外层 inputBox 的描边 + 浅蓝光晕承担 */
+.composerInput:focus,
+.composerInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: none;
 }
 
 .composerInput::placeholder {

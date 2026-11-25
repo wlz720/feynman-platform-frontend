@@ -393,6 +393,67 @@ a {
   border-radius: 50%;
 }
 
+/* ---------- 可视化页面：全屏适配 ---------- */
+/* 原生 Fullscreen API 下舞台铺满视口 */
+.fs-active:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+/* API 不可用时的 CSS 兜底：固定定位铺满 */
+.fs-active.fs-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  border-radius: 0;
+  margin: 0;
+}
+
+.fs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--primary-ink);
+  font-size: 12.5px;
+  font-weight: 650;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fs-toggle:hover {
+  background: var(--brand-100);
+  border-color: var(--brand-300);
+}
+
+/* 暗色 3D 舞台内的全屏按钮 */
+.fs-toggle-dark {
+  background: rgba(14, 30, 46, 0.72);
+  color: #eaf4fa;
+  border-color: rgba(126, 200, 227, 0.28);
+}
+
+.fs-toggle-dark:hover {
+  background: rgba(31, 58, 80, 0.85);
+  border-color: rgba(126, 200, 227, 0.5);
+}
+
+/* 全屏时舞台卡片纵向铺满；内层画布高度规则放在各页面 module.css（类名被哈希，全局选择器匹配不到） */
+.fs-active {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ---------- 表单 ---------- */
 .field {
   display: flex;

@@ -274,3 +274,24 @@
     padding: 13px 14px;
   }
 }
+
+/* 全屏适配：卡片纵向铺满，宇宙画布撑满剩余高度 */
+.universeCard:global(.fs-active) {
+  display: flex;
+  flex-direction: column;
+}
+
+.universeCard:global(.fs-active) .stageHead {
+  flex-shrink: 0;
+}
+
+.universeCard:global(.fs-active) .canvasWrap {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.universeCard:global(.fs-active) .canvas {
+  height: 100% !important;
+  min-height: 0 !important;
+}

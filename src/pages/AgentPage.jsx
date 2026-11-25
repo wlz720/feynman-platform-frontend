@@ -9,8 +9,26 @@ const INITIAL_MESSAGE = {
   text: '你好！我是你的知识库 AI 助手。我会先在你的知识点里检索相关内容，再据此回答，不会凭空编造。可以问我笔记里的概念，也可以让我对比两个容易混淆的知识点。',
 };
 
+const STORAGE_KEY = 'feynman-agent-messages';
+const MAX_STORED_MESSAGES = 50;
+
+// 从本地存储恢复上次对话；切换页面再回来记录不丢失
+function loadStoredMessages() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [INITIAL_MESSAGE];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.slice(-MAX_STORED_MESSAGES);
+    }
+  } catch {
+    // 存储损坏时回退到欢迎语
+  }
+  return [INITIAL_MESSAGE];
+}
+
 function AgentPage() {
-  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState(loadStoredMessages);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [kpCount, setKpCount] = useState(null);
@@ -18,6 +36,15 @@ function AgentPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncInfo, setSyncInfo] = useState('');
   const chatWindowRef = useRef(null);
+
+  // 对话记录持久化到本地，最多保留最近 50 条
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
+    } catch {
+      // 存储已满或不可用时忽略，不影响对话
+    }
+  }, [messages]);
 
   useEffect(() => {
     const el = chatWindowRef.current;
@@ -91,6 +118,16 @@ function AgentPage() {
     }
   };
 
+  // 清空对话：同时清除本地持久化记录
+  const handleClear = () => {
+    setMessages([INITIAL_MESSAGE]);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // 忽略存储异常
+    }
+  };
+
   // 重建当前用户的向量索引：修复保存时向量化失败导致笔记检索不到的问题
   const handleSync = async () => {
     if (syncing) return;
@@ -119,7 +156,7 @@ function AgentPage() {
   };
 
   return (
-    <div className="page">
+    <div className="page agentPage">
       <div className="page-header">
         <div>
           <span className="eyebrow">RAG ASSISTANT</span>
@@ -217,7 +254,7 @@ function AgentPage() {
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => setMessages([INITIAL_MESSAGE])}
+                onClick={handleClear}
                 disabled={isLoading}
               >
                 清空对话
