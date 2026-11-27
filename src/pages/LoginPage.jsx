@@ -3,27 +3,52 @@ import apiClient from '../api/axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthShell from '../components/AuthShell';
+import { accountError, passwordError } from '../utils/authValidation';
 import './AuthPages.css';
 
 function LoginPage() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ account: '', password: '' });
+  const [errors, setErrors] = useState({ account: '', password: '' });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const validateField = (name, data = formData) => {
+    if (name === 'account') return accountError(data.account);
+    if (name === 'password') return passwordError(data.password);
+    return '';
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const next = { ...formData, [e.target.name]: e.target.value };
+    setFormData(next);
+    setErrors((prev) => ({ ...prev, [e.target.name]: validateField(e.target.name, next) }));
+  };
+
+  const handleBlur = (e) => {
+    setErrors((prev) => ({ ...prev, [e.target.name]: validateField(e.target.name) }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
     setError('');
+
+    const nextErrors = {
+      account: accountError(formData.account),
+      password: passwordError(formData.password)
+    };
+    setErrors(nextErrors);
+    if (nextErrors.account || nextErrors.password) return;
+
     setIsSubmitting(true);
     try {
-      const response = await apiClient.post('/users/login', formData);
+      const response = await apiClient.post('/users/login', {
+        account: formData.account.trim(),
+        password: formData.password
+      });
       login(response.data.token, response.data.user);
       navigate('/', { replace: true });
     } catch (err) {
@@ -50,7 +75,9 @@ function LoginPage() {
           <p className="auth-switch">
             还没有账号？<Link to="/register">立即注册</Link>
           </p>
-          <p className="auth-note">忘记密码？请联系课程管理员重置。</p>
+          <p className="auth-switch">
+            <Link to="/forgot-password">忘记密码？</Link>
+          </p>
         </>
       }
     >
@@ -59,23 +86,25 @@ function LoginPage() {
           {error}
         </div>
       )}
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <div className="field">
-          <label className="label" htmlFor="login-email">
-            邮箱
+          <label className="label" htmlFor="login-account">
+            邮箱或手机号
           </label>
           <input
-            id="login-email"
+            id="login-account"
             className="input"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={formData.email}
+            name="account"
+            type="text"
+            autoComplete="username"
+            placeholder="you@example.com 或 11 位手机号"
+            value={formData.account}
             onChange={handleChange}
-            required
+            onBlur={handleBlur}
           />
+          {errors.account && <p className="field-error">{errors.account}</p>}
         </div>
+
         <div className="field">
           <label className="label" htmlFor="login-password">
             密码
@@ -90,7 +119,7 @@ function LoginPage() {
               placeholder="请输入密码"
               value={formData.password}
               onChange={handleChange}
-              required
+              onBlur={handleBlur}
             />
             <button
               type="button"
@@ -101,7 +130,9 @@ function LoginPage() {
               {showPassword ? '隐藏' : '显示'}
             </button>
           </div>
+          {errors.password && <p className="field-error">{errors.password}</p>}
         </div>
+
         <button
           type="submit"
           className="btn btn-primary btn-lg btn-block"

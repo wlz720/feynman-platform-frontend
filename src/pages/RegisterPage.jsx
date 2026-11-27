@@ -3,23 +3,85 @@ import apiClient from '../api/axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthShell from '../components/AuthShell';
+import {
+  usernameError,
+  phoneError,
+  emailError,
+  passwordError,
+  confirmPasswordError
+} from '../utils/authValidation';
 import './AuthPages.css';
+
+const EMPTY_ERRORS = {
+  username: '',
+  phone: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+};
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
     username: '',
+    phone: '',
     email: '',
     password: '',
-    confirmPassword: '',
+    confirmPassword: ''
   });
+  const [errors, setErrors] = useState(EMPTY_ERRORS);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  // 校验单个字段；confirmPassword 依赖 password，单独算
+  const validateField = (name, data = formData) => {
+    switch (name) {
+      case 'username':
+        return usernameError(data.username);
+      case 'phone':
+        return phoneError(data.phone);
+      case 'email':
+        return emailError(data.email);
+      case 'password':
+        return passwordError(data.password);
+      case 'confirmPassword':
+        return confirmPasswordError(data.password, data.confirmPassword);
+      default:
+        return '';
+    }
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const next = { ...formData, [e.target.name]: e.target.value };
+    setFormData(next);
+    // 输入时即时重算该字段，改正后红字立刻消失
+    setErrors((prev) => {
+      const nextErrors = { ...prev, [e.target.name]: validateField(e.target.name, next) };
+      // 密码改动后联动确认密码
+      if (e.target.name === 'password') {
+        nextErrors.confirmPassword = confirmPasswordError(next.password, next.confirmPassword);
+      }
+      return nextErrors;
+    });
+  };
+
+  const handleBlur = (e) => {
+    const name = e.target.name;
+    setErrors((prev) => ({ ...prev, [name]: validateField(name) }));
+  };
+
+  const validateAll = () => {
+    const nextErrors = {
+      username: validateField('username'),
+      phone: validateField('phone'),
+      email: validateField('email'),
+      password: validateField('password'),
+      confirmPassword: validateField('confirmPassword')
+    };
+    setErrors(nextErrors);
+    return !Object.values(nextErrors).some(Boolean);
   };
 
   const handleSubmit = async (e) => {
@@ -27,33 +89,24 @@ function RegisterPage() {
     if (isSubmitting) return;
     setError('');
 
-    const username = formData.username.trim();
-    if (!username) {
-      setError('请输入用户名');
-      return;
-    }
-    if (formData.password.length < 6) {
-      setError('密码至少需要 6 位字符');
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('两次输入的密码不一致，请重新确认');
-      return;
-    }
+    if (!validateAll()) return; // 存在不合法项，不提交
 
     setIsSubmitting(true);
     let registered = false;
     try {
-      await apiClient.post('/users/register', {
-        username,
+      const payload = {
+        username: formData.username.trim(),
+        phone: formData.phone.trim(),
         email: formData.email.trim(),
         password: formData.password,
-      });
+        confirmPassword: formData.confirmPassword
+      };
+      await apiClient.post('/users/register', payload);
       registered = true;
 
       const loginRes = await apiClient.post('/users/login', {
-        email: formData.email.trim(),
-        password: formData.password,
+        account: payload.email,
+        password: payload.password
       });
       login(loginRes.data.token, loginRes.data.user);
       navigate('/', { replace: true });
@@ -89,27 +142,45 @@ function RegisterPage() {
           {error}
         </div>
       )}
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <div className="field">
           <label className="label" htmlFor="register-username">
-            用户名
-            <span className="required">*</span>
+            用户名<span className="required">*</span>
           </label>
           <input
             id="register-username"
             className="input"
             name="username"
             autoComplete="username"
-            placeholder="怎么称呼你"
+            placeholder="怎么称呼你（2–20 个字符）"
             value={formData.username}
             onChange={handleChange}
-            required
+            onBlur={handleBlur}
           />
+          {errors.username && <p className="field-error">{errors.username}</p>}
         </div>
+
+        <div className="field">
+          <label className="label" htmlFor="register-phone">
+            手机号<span className="optional">（选填，便于找回密码）</span>
+          </label>
+          <input
+            id="register-phone"
+            className="input"
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="11 位手机号，可留空"
+            value={formData.phone}
+            onChange={handleChange}
+            onBlur={handleBlur}
+          />
+          {errors.phone && <p className="field-error">{errors.phone}</p>}
+        </div>
+
         <div className="field">
           <label className="label" htmlFor="register-email">
-            邮箱
-            <span className="required">*</span>
+            邮箱<span className="required">*</span>
           </label>
           <input
             id="register-email"
@@ -120,13 +191,14 @@ function RegisterPage() {
             placeholder="you@example.com"
             value={formData.email}
             onChange={handleChange}
-            required
+            onBlur={handleBlur}
           />
+          {errors.email && <p className="field-error">{errors.email}</p>}
         </div>
+
         <div className="field">
           <label className="label" htmlFor="register-password">
-            密码
-            <span className="required">*</span>
+            密码<span className="required">*</span>
           </label>
           <div className="input-wrap">
             <input
@@ -138,8 +210,7 @@ function RegisterPage() {
               placeholder="至少 6 位字符"
               value={formData.password}
               onChange={handleChange}
-              required
-              minLength={6}
+              onBlur={handleBlur}
             />
             <button
               type="button"
@@ -150,11 +221,12 @@ function RegisterPage() {
               {showPassword ? '隐藏' : '显示'}
             </button>
           </div>
+          {errors.password && <p className="field-error">{errors.password}</p>}
         </div>
+
         <div className="field">
           <label className="label" htmlFor="register-confirm">
-            确认密码
-            <span className="required">*</span>
+            确认密码<span className="required">*</span>
           </label>
           <input
             id="register-confirm"
@@ -165,9 +237,11 @@ function RegisterPage() {
             placeholder="再输入一次密码"
             value={formData.confirmPassword}
             onChange={handleChange}
-            required
+            onBlur={handleBlur}
           />
+          {errors.confirmPassword && <p className="field-error">{errors.confirmPassword}</p>}
         </div>
+
         <button
           type="submit"
           className="btn btn-primary btn-lg btn-block"
